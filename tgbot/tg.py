@@ -1,5 +1,6 @@
 import threading
 import telebot
+import telebot.types
 import psutil
 import os
 import time
@@ -125,9 +126,42 @@ class TgBotus:
     def set_scenaries(self, scenaries):
         self.scenaries = scenaries  # [(dir_path, main_file, display), ...]
 
+    def configure_bot(self):
+        try:
+            target_desc = (
+                "🚀 Бесплатный бот для Lineage 2M (japan)\n\n"
+                "✅ Автоматизация фарма, сбора наград, аукциона\n"
+                "🛠 Открытый исходный код (GitHub)\n"
+                "🧠 Настраиваемые действия, сценарии\n"
+                "👥 Полная чистота, никаких запросов налево\n\n"
+                "🔗 https://github.com/PythonPapochka/L2M_Bot"
+            )
+
+            target_short = "🎮 L2M Bot (JP edition) — сборщик, фармер.\n✅ Бесплатно и с исходниками 👇\n🔗 https://github.com/PythonPapochka/L2M_Bot"
+            target_commands = [
+                telebot.types.BotCommand("menu", "Открыть меню"),
+            ]
+
+            current_desc = self.bot.get_my_description().description or ""
+            current_short = self.bot.get_my_short_description().short_description or ""
+            current_cmds = self.bot.get_my_commands()
+
+            if current_desc != target_desc:
+                self.bot.set_my_description(description=target_desc)
+
+            if current_short != target_short:
+                self.bot.set_my_short_description(short_description=target_short)
+
+            if current_cmds != target_commands:
+                self.bot.set_my_commands(target_commands)
+
+        except Exception as e:
+            log(f"pzdccc {e}")
+
     def start_polling(self):
         if not self._polling_started:
             log("tg bot started epta")
+            self.configure_bot()
             self.polling_thread = threading.Thread(target=self.bot.infinity_polling, daemon=True)
             self.polling_thread.start()
             self._polling_started = True

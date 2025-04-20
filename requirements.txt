@@ -7,7 +7,5 @@ psutil
 pyautogui
 pyclick
 pygetwindow
-win32api
-win32con
-win32gui
+pywin32
 pyTelegramBotAPI

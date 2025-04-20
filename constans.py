@@ -2,6 +2,9 @@ SETTINGS_DIR = r"data.json"
 LOG_DIR = r"\logs"
 SCENARIES_DIR = r"\scenaries"
 
+SPOT_OT = 1
+SPOT_DO = 3
+
 AUTOBUY_DONATE_SHOP = "18:05" #todo
 CLAIM_REWARDS = "23:05" #todo
 

@@ -1,14 +1,22 @@
-# ⚔️ Lineage 2M Japan Bot
+# ⚔️ **Lineage 2M Japan Bot**
 
-![Lineage II](https://img.shields.io/badge/Lineage2-Mobile_JP-red?style=for-the-badge&logo=android)
-![Status](https://img.shields.io/badge/status-Active-green?style=for-the-badge)
-![Language](https://img.shields.io/badge/language-Python-blue?style=for-the-badge&logo=python)
+<p align="center">
+  <img src="https://img.shields.io/badge/Lineage2-Mobile_JP-red?style=for-the-badge&logo=android" alt="Lineage II" />
+  <img src="https://img.shields.io/badge/status-Active-green?style=for-the-badge" alt="Status" />
+  <img src="https://img.shields.io/badge/language-Python-blue?style=for-the-badge&logo=python" alt="Language" />
+</p>
 
-> 🧠 Анти-интеллектуальный бот-помощник для **Lineage 2M Japan**: автоматизация, фарм, и многое (малое) другое!
+## 💬 **Связь и поддержка**  
+👉 **Telegram**: [@BotLineage2M](https://t.me/BotLineage2M)  
+👉 **GitHub**: (напишите в ЛС)
 
 ---
 
-## 🚀 Возможности
+> 🧠 **Анти-интеллектуальный бот-помощник** для **Lineage 2M Japan**: автоматизация, фарм и многое (малое) другое!
+
+---
+
+## 🚀 **Возможности**
 
 - 🕹 **Автоматический фарм**: Поддержка авто-гринда с гибкими таймерами. ( но это не точно)
 - 📨 **Интеграция с Telegram** *(обязательно)*: Уведомления и информация прямо в чате!
@@ -39,4 +47,4 @@
    ```bash
    python3.11 gui.py
 
-![GUI preview](assets/gui.png)
+<p align="center"> <img src="assets/gui.png" alt="GUI preview" /> </p>

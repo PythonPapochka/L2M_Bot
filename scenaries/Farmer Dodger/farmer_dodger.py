@@ -2,7 +2,7 @@ import time
 import os
 from datetime import datetime, timedelta
 from clogger import log
-from constans import SLEEP_AFTER_PVP_DODGE, SLEEP_AFTER_RIP
+from constans import SLEEP_AFTER_PVP_DODGE, SLEEP_AFTER_RIP, SPOT_OT, SPOT_DO
 
 from methods.base_methods import loadSettings, editSettingsByHWND, parseCBT, check_pixel, click_mouse
 from manager import PvpManager, BackToSpotManager, DeathManager, HpBankManager, PerevesManager, \
@@ -93,7 +93,7 @@ class Scenary:
                     data = self.settings[windowname]
                     energo_mode({window_id: data}, "off")
                     navigateToNPC({window_id: data}, "shop")
-                    teleportToRandomSpot({window_id: data}, 1, 1)
+                    teleportToRandomSpot({window_id: data}, SPOT_OT, SPOT_DO)
                     data["InHome"] = "null"
                     data["State"] = "combat"
                     editSettingsByHWND(window_id, data)
@@ -170,13 +170,13 @@ class Scenary:
                         log(f"Тпнулся в город успешно", window_id)
                         data["State"] = "shopping"
                         editSettingsByHWND(window_id, data)
-                        time.sleep(1)
+                        time.sleep(0.3)
                         log(f"Пробую пойти к магазу", window_id)
                         result = navigateToNPC({window_id: data}, "shop")
-                        time.sleep(1)
+                        time.sleep(0.2)
                         log(f"Результат закупочки - {result}", window_id)
                         log(f"Пробую тп на рандом спот", window_id)
-                        result2 = teleportToRandomSpot({window_id: data}, 1, 1)
+                        result2 = teleportToRandomSpot({window_id: data}, SPOT_OT, SPOT_DO)
                         log(f"Результат тп на рандом спот - {result2}", window_id)
                         if result or result2:
                             log(f"После закупки и тп - {result}, {result2}", window_id)
@@ -222,7 +222,7 @@ class Scenary:
                         data["State"] = "stashing"
                         result = navigateToNPC({window_id: data}, "stash")
                         if result:
-                            tp = teleportToRandomSpot({window_id: data}, 1, 1)
+                            tp = teleportToRandomSpot({window_id: data}, SPOT_OT, SPOT_DO)
                             if tp:
                                 data["InHome"] = "null"
                                 data["State"] = "combat"
@@ -260,7 +260,7 @@ class Scenary:
                     if energo:
                         energo_mode({window_id: data}, "off")
 
-                    teleport = teleportToRandomSpot({window_id: data}, 1, 1)
+                    teleport = teleportToRandomSpot({window_id: data}, SPOT_OT, SPOT_DO)
                     if teleport:
                         time.sleep(3)
                         hunt = checkAutoHunt({window_id: data})

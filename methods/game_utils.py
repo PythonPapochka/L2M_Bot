@@ -577,6 +577,7 @@ def respawn(windowInfo):
                 result = click_mouse(windowInfo, x, y)
 
             xy, rgb = parseCBT("zalupka_gui")
+            time.sleep(2)
             teleported = check_pixel(windowInfo, xy, rgb, 5)
             if teleported:
                 log("Успешно восстал из мертвых", windowid)
@@ -603,15 +604,16 @@ def energo_mode(windowInfo, state):
 
             inputs.move_to(center_x, center_y)
             inputs.mouse_down("left")
-            time.sleep(0.1)
-            inputs.move_to(center_x - 75, center_y - 30)
             time.sleep(0.05)
+            inputs.move_to(center_x - 75, center_y - 50)
+            time.sleep(0.05)
+            inputs.move_to(center_x - 25, center_y - 20)
             inputs.mouse_up("left")
             time.sleep(0.2)
             xy1, rgb1 = parseCBT("zalupka_gui")
             teleported = check_pixel(windowInfo, xy1, rgb1, 10)
             if teleported:
-                log("Чекаю лвл ап залупу", window_id)
+                log("Чекаю лвл ап залупу 123", window_id)
                 xy, rgb = parseCBT("lvl_up_black")
                 teleported = check_pixel(windowInfo, xy, rgb, 0.5)
                 if teleported:
@@ -624,7 +626,17 @@ def energo_mode(windowInfo, state):
                     
                 return True
             else:
-                time.sleep(3)
+                if checkEnergoMode(windowInfo):
+                    log("Шось пошло не так при снятии с энерго", window_id)
+                    inputs.move_to(center_x, center_y)
+                    inputs.mouse_down("left")
+                    time.sleep(0.05)
+                    inputs.move_to(center_x - 75, center_y - 50)
+                    time.sleep(0.05)
+                    inputs.mouse_up("left")
+                    time.sleep(0.2)
+                    
+                time.sleep(2)
                 log("Чекаю лвл ап залупу бабах", window_id)
                 xy, rgb = parseCBT("lvl_up_black")
                 teleported = check_pixel(windowInfo, xy, rgb, 0.5)

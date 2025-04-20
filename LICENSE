@@ -1,0 +1,11 @@
+Copyright (c) 2025 PythonPapochka
+
+All rights reserved.
+
+This software and associated documentation files (the "Software") are provided for educational and extension purposes only. You are permitted to create and share your own *scenarios* that interact with the public interfaces (methods) of this project.
+
+However, the core functionality — including internal methods, architecture, and base logic — may not be copied, modified, merged, published, distributed, sublicensed, or sold, in whole or in part, without the prior written permission of the author.
+
+You may not republish or redistribute this repository or its core codebase as a new or derivative project.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

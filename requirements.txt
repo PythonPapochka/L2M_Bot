@@ -1,0 +1,13 @@
+PyQt5
+logging
+colorlog
+mss
+numpy
+psutil
+pyautogui
+pyclick
+pygetwindow
+win32api
+win32con
+win32gui
+pyTelegramBotAPI

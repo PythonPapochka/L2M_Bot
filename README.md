@@ -31,10 +31,12 @@
    Открой терминал в папке с ботом и выполни:
 
    ```bash
-   pip install -r requirements.txt```
+   pip install -r requirements.txt
 
 4. 🖥 **Запуск**
-	В том же терминале запусти:
+   В том же терминале запусти:
 
-	```bash
-	python3.11 gui.py```
+   ```bash
+   python3.11 gui.py
+
+![GUI preview](assets/gui.png)

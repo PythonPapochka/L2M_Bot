@@ -6,7 +6,7 @@ from clogger import log
 from methods.base_methods import loadSettings, editSettingsByHWND, parseCBT, check_pixel, click_mouse, load_config
 
 from manager import PvpManager, BackToSpotManager, DeathManager, HpBankManager, PerevesManager, \
-    FarmManager
+    FarmManager, MailClaimerManager, RewardsManager
 
 from methods.game_utils import teleportToTown, energo_mode, navigateToNPC, \
     teleportToRandomSpot, respawn, buyLootAfterRIP, checkRIP, checkEnergoMode, \
@@ -24,6 +24,7 @@ class Scenary:
     def __init__(self):
         self.bot = TgBotus()
         self.filename = os.path.splitext(os.path.basename(__file__))[0]
+        self.settings = loadSettings()
         self.bot.send_message("admin", f"✅ <b>Успешно запустили сценарий!</b>\n<code>{self.filename}</code>")
 
         self.hpBankManager = HpBankManager()
@@ -32,6 +33,8 @@ class Scenary:
         self.deathManager = DeathManager()
         self.perevesManager = PerevesManager()
         self.farmManager = FarmManager()
+        self.mailClaimerManager = MailClaimerManager()
+        self.rewardsManager = RewardsManager()
 
         self.hpBankManager.start()
         self.spotManager.start()
@@ -39,14 +42,16 @@ class Scenary:
         self.deathManager.start()
         self.perevesManager.start()
         self.farmManager.start()
-
-        self.settings = loadSettings()
+        self.mailClaimerManager.start()
+        self.rewardsManager.start()
 
         self.spot_in_progress = False
         self.death_in_progress = False
         self.banka_in_progress = False
         self.pereves_in_progress = False
         self.farm_backer_in_progress = False
+        self.rewards_in_progress = False
+        self.mail_in_progress = False
 
     def process_pvp(self):
         queue = self.pvpManager.get_queue()
@@ -313,8 +318,13 @@ class Scenary:
 
                 self.farm_backer_in_progress = False
 
-    def run(self):
+    def process_mail(self):
+        pass
 
+    def process_rewards(self):
+        pass
+
+    def run(self):
         while True:
             self.process_pvp()
             self.process_spots()

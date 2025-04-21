@@ -2,7 +2,7 @@ from interception import inputs
 import time
 from clogger import log
 from constans import NPCS, NPC_CHECK_BUTTONS
-from methods.base_methods import click_mouse, parseCBT, check_pixel
+from methods.base_methods import click_mouse, parseCBT, check_pixel, load_config
 import json
 import random
 
@@ -177,6 +177,9 @@ def claim_aliance(windowInfo):
     pass
 
 def claim_donate_shop(windowInfo):
+    cfg = load_config()
+    vkladki = [int(x.strip()) for x in cfg.other.MAGAZ_PAGES.split(",")]
+
     def wait_and_click(tag, timeout=5):
         xy, rgb = parseCBT(tag)
         if check_pixel(windowInfo, xy, rgb, timeout):
@@ -185,31 +188,45 @@ def claim_donate_shop(windowInfo):
             return True
         return False
 
+    def go_to_tab(tab_num):
+        tag = f"magaz_str_{tab_num}"
+        result = wait_and_click(tag, 5)
+        time.sleep(1)
+        return result
+
     windowid = next(iter(windowInfo))
 
     if checkEnergoMode(windowInfo):
         energo_mode(windowInfo, "off")
         time.sleep(2)
-        
+
     if not wait_and_click("magaz_gui_open", 5):
         return False
 
     if not wait_and_click("red_dot_magaz", 4):
-        close = wait_and_click("npc_global_quit_button", 5)
+        wait_and_click("npc_global_quit_button", 5)
         return False
 
-    if not wait_and_click("purc_all_magaz", 10):
-        close = wait_and_click("npc_global_quit_button", 5)
-        return False
+    for tab in vkladki:
+        if not go_to_tab(tab):
+            continue
 
-    if not wait_and_click("buy_all_magaz", 5):
-        close = wait_and_click("npc_global_quit_button", 5)
-        return False
-        
+        time.sleep(1)
+
+        if not wait_and_click("purc_all_magaz", 10):
+            wait_and_click("npc_global_quit_button", 5)
+            return False
+
+        if not wait_and_click("buy_all_magaz", 5):
+            wait_and_click("npc_global_quit_button", 5)
+            return False
+
+        time.sleep(0.5)
+
     if not wait_and_click("close_magaz", 20):
-        close = wait_and_click("npc_global_quit_button", 5)
+        wait_and_click("npc_global_quit_button", 5)
         return False
-    
+
     time.sleep(1)
     return True
 
@@ -351,7 +368,7 @@ def buyLootAfterRIP(windowInfo):
                             log(f"Успешно выкупил {len(value)} шт опыта!", windowid)
                             lvlup = checkLvlUp(windowInfo)
                             if lvlup:
-                                log(f"сломался лвл ап чек", window_id)
+                                log(f"сломался лвл ап чек", windowid)
                             return True
             else:
                 log("Не нужно выкупать предметы", windowid)

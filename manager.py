@@ -1,13 +1,14 @@
 from clogger import log
 import numpy as np
 import mss
-from methods.base_methods import loadSettings, parseCBT
-from datetime import datetime
+from methods.base_methods import loadSettings, parseCBT, load_config
+from datetime import datetime, timedelta
+import pytz
 import threading
 import time
+import os
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
 
 def pixel_checkManager(window, rgb, xy, timeout=0.02):
     if rgb == "no":
@@ -232,14 +233,110 @@ class FarmManager(Manager):
             self.check(self.get_settings())
             time.sleep(1)
 
-# todo ждем наступления времени сборов и собираем во всех окнах почту
+# ждем наступления времени сборов из кфг
 class RewardsManager(Manager):
     log("RewardsManager loaded")
+    cfg = load_config()
+    SBOR_TIME = cfg.spots.CLAIM_ALL_REWARDS
+    TIMEZONE = cfg.misc.TIMEZONE
+    RECORDS = "collected.txt"
+
     def check(self, windows_info):
+        now = datetime.now(pytz.timezone(self.TIMEZONE))
+        current_time = now.strftime("%H:%M")
+        today_str = now.strftime("%Y-%m-%d")
+
+        collected = {}
+
+        if os.path.exists(self.RECORDS):
+            with open(self.RECORDS, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.split(",")
+                    if len(parts) == 2:
+                        collected[parts[0]] = parts[1]
+
+        if current_time >= self.SBOR_TIME:
+            for window_id, window in windows_info.items():
+                state = window.get("State")
+
+                if collected.get(window_id) == today_str:
+                    continue
+
+                if state not in ["stashing", "death", "shopping", "claiming"]:
+                    try:
+                        if window_id not in self.processed_windows:
+                            with self.lock:
+                                self.q.append(window_id)
+                                self.processed_windows.add(window_id)
+                                with open(self.RECORDS, "a", encoding="utf-8") as f:
+                                    f.write(f"{window_id},{today_str}\n")
+                    except ValueError:
+                        continue
+
+    def add_to_queue(self):
+        while True:
+            self.check(self.get_settings())
+            time.sleep(1)
+
+# ждем наступления времени сборов почты из кфг
+class MailClaimerManager(Manager):
+    log("MailClaimerManager loaded")
+    cfg = load_config()
+    MAIL_TIME = cfg.spots.CLAIM_MAIL  # типо "00:05|06:05|12:05|18:05"
+    TIMEZONE = cfg.misc.TIMEZONE
+    RECORDS = "mail.txt"
+    MAX_DELAY_MINUTES = 10
+
+    def check(self, windows_info):
+        now = datetime.now(pytz.timezone(self.TIMEZONE))
+        today_str = now.strftime("%Y-%m-%d")
+        claim_times = self.MAIL_TIME.split("|")
+
+        matched_time = None
+        for t in claim_times:
+            scheduled = datetime.strptime(f"{today_str} {t}", "%Y-%m-%d %H:%M")
+            scheduled = pytz.timezone(self.TIMEZONE).localize(scheduled)
+            if timedelta(0) <= (now - scheduled) <= timedelta(minutes=self.MAX_DELAY_MINUTES):
+                matched_time = t
+                break  # берем только самое ближайшее
+
+        if not matched_time:
+            return  # пздц, везде промах
+
+        current_key = f"{today_str}|{matched_time}"
+
+        collected = {}
+        if os.path.exists(self.RECORDS):
+            with open(self.RECORDS, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.split(",")
+                    if len(parts) >= 2:
+                        window_id = parts[0]
+                        timestamps = set(parts[1:])
+                        collected[window_id] = timestamps
+
         for window_id, window in windows_info.items():
             state = window.get("State")
-            time.sleep(555555555)
-            pass
+
+            if current_key in collected.get(window_id, set()):
+                continue  # уже собирали за это окно, покедон
+
+            if state not in ["stashing", "death", "shopping", "claiming"]:
+                try:
+                    if window_id not in self.processed_windows:
+                        with self.lock:
+                            self.q.append(window_id)
+                            self.processed_windows.add(window_id)
+                            with open(self.RECORDS, "a", encoding="utf-8") as f:
+                                f.write(f"{window_id},{current_key}\n")
+                except ValueError:
+                    continue
 
     def add_to_queue(self):
         while True:

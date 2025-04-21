@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.so
+venv/
+env/
+.idea/
+.vscode/
+*.log
+data.json

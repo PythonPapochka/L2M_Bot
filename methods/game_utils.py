@@ -613,7 +613,7 @@ def energo_mode(windowInfo, state):
             if teleported:
                 lvlup = checkLvlUp(windowInfo)
                 if lvlup:
-                    log(f"сломался лвл ап чек", windowid)
+                    log(f"сломался лвл ап чек", window_id)
                     
                 return True
             else:
@@ -630,7 +630,8 @@ def energo_mode(windowInfo, state):
                 time.sleep(2)
                 lvlup = checkLvlUp(windowInfo)
                 if lvlup:
-                    log(f"сломался лвл ап чек", windowid)
+                    log(f"сломался лвл ап чек", window_id)
+
                 teleported = check_pixel(windowInfo, xy1, rgb1, 3)
                 if teleported:
                     return True

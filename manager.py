@@ -124,10 +124,12 @@ class Manager:
 class DeathManager(Manager):
     log("DeathManager loaded")
     def add_to_queue(self):
-        xy_to_check, rgb_to_check = parseCBT("you_were_killed_energomode")
+        cbts = ["you_were_killed_energomode", "check_death_penalty", "respawn_village"]
         while True:
-            self.checker(self.get_settings(), rgb_to_check, xy_to_check)
-            time.sleep(0.5)
+            for cbt in cbts:
+                xy_to_check, rgb_to_check = parseCBT(cbt)
+                self.checker(self.get_settings(), rgb_to_check, xy_to_check)
+                time.sleep(0.5)
 
 # менеджер пвп, проверяет все окна на то бьют ли их
 class PvpManager(Manager):
@@ -186,7 +188,8 @@ class HpBankManager(Manager):
             settings2 = self.get_settings()
             for window_id, window in settings2.items():
                 state = window.get("State")
-                if state == "combat":
+                in_home = window.get("InHome")
+                if state == "combat" and in_home == "null":
                     #print("хп банка чет чекает 4 раза")
                     self.checker(settings2, rgb_to_check, xy_to_check, recheck=4)
                     time.sleep(0.5)

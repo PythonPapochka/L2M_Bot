@@ -355,12 +355,12 @@ def buyLootAfterRIP(windowInfo):
                 return True
 
 def checkRIP(windowInfo):
-    cbts = ["you_were_killed_energomode"]
+    cbts = ["you_were_killed_energomode", "check_death_penalty", "respawn_village"]
 
     for cbt in cbts:
         xy, rgb = parseCBT(cbt)
         if not check_pixel(windowInfo, xy, rgb):
-            print(1)
+            #print(1)
             return False
     return True
 
@@ -551,9 +551,6 @@ def respawn(windowInfo):
     windowid = next(iter(windowInfo))
     if checkEnergoMode(windowInfo):
         r = energo_mode(windowInfo, "off")
-
-    #xy, rgb = parseCBT("")
-    #if check_pixel(windowInfo, xy, rgb, 0.01):
 
     cbts = ["check_death_penalty", "respawn_village"]
     max_attempts = 200

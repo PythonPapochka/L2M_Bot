@@ -41,7 +41,7 @@ def get_cached_settings():
     global _settings_cache, _settings_timestamp
     with _settings_lock:
         now = time.time()
-        if now - _settings_timestamp > 0.5 or _settings_cache is None: #todo сделать норм одни настройки для всех, багует если дрочить быстро
+        if now - _settings_timestamp > 1.2 or _settings_cache is None: #todo сделать норм одни настройки для всех, багует если дрочить быстро
             _settings_cache = loadSettings()
             _settings_timestamp = now
         return _settings_cache
@@ -66,7 +66,7 @@ class Manager:
                 self.processed_windows.add(window_nickname)
 
     def checker(self, windows_info, rgb, xy, recheck=1, delay=2):
-        with ThreadPoolExecutor(max_workers=20) as executor:
+        with ThreadPoolExecutor(max_workers=30) as executor:
             futures = []
             for window_nickname, window in windows_info.items():
 
@@ -187,8 +187,8 @@ class HpBankManager(Manager):
             for window_id, window in settings2.items():
                 state = window.get("State")
                 if state == "combat":
-                    #print("хп банка чет чекает 3 раза")
-                    self.checker(settings2, rgb_to_check, xy_to_check, recheck=3)
+                    #print("хп банка чет чекает 4 раза")
+                    self.checker(settings2, rgb_to_check, xy_to_check, recheck=4)
                     time.sleep(0.5)
 
 # менеджер проверки сумки, уведет окно если будет 50% или 80% перевеса
@@ -223,6 +223,20 @@ class FarmManager(Manager):
                             self.processed_windows.add(window_id)
                 except ValueError:
                     continue
+
+    def add_to_queue(self):
+        while True:
+            self.check(self.get_settings())
+            time.sleep(1)
+
+# todo ждем наступления времени сборов и собираем во всех окнах почту
+class RewardsManager(Manager):
+    log("RewardsManager loaded")
+    def check(self, windows_info):
+        for window_id, window in windows_info.items():
+            state = window.get("State")
+            time.sleep(555555555)
+            pass
 
     def add_to_queue(self):
         while True:

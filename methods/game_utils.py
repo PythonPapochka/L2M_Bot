@@ -630,8 +630,14 @@ def energo_mode(windowInfo, state):
             center_y = position_y + height // 2
 
             inputs.move_to(center_x, center_y)
+            time.sleep(0.1)
+
+            inputs.mouse_down("left")
+            inputs.mouse_up("left") #kostyl не проходил клик в окно и не снимало с энерго, если кликнуть дважды то норм
+            time.sleep(0.05)
             inputs.mouse_down("left")
             inputs.mouse_up("left")
+
             time.sleep(0.05)
             inputs.mouse_down("left")
             inputs.move_to(center_x - 75, center_y - 50)

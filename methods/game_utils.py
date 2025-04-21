@@ -31,7 +31,7 @@ def claim_achiv(windowInfo):
 
     while True:
         found_clan_3 = wait_and_click("achiv_claim_1", 2)
-        found_clan_4 = wait_and_click("achiv_claim_accept", 5)
+        found_clan_4 = wait_and_click("achiv_claim_accept", 2)
 
         if not found_clan_3:
             claimed = True
@@ -82,6 +82,7 @@ def claim_mail(windowInfo):
     return True
 
 def claim_battle_pass(windowInfo):
+    #todo
     pass
 
 def claim_daily(windowInfo):
@@ -133,7 +134,7 @@ def claim_clan(windowInfo):
 
     if checkEnergoMode(windowInfo):
         energo_mode(windowInfo, "off")
-        time.sleep(2)
+        time.sleep(1)
 
     if not wait_and_click("main_menu_gui", 5):
         return False
@@ -146,7 +147,7 @@ def claim_clan(windowInfo):
         close = wait_and_click("npc_global_quit_button", 5)
         return False
 
-    if not wait_and_click("clan_2", 5):
+    if not wait_and_click("clan_2", 3):
         close = wait_and_click("npc_global_quit_button", 5)
         return False
 
@@ -157,7 +158,7 @@ def claim_clan(windowInfo):
         if found_clan_3:
             if found_clan_4:
                 time.sleep(0.5)
-                wait_and_click("clan_4", 2)
+                wait_and_click("clan_4", 1)
             continue
         else:
             break
@@ -361,7 +362,6 @@ def checkRIP(windowInfo):
         if not check_pixel(windowInfo, xy, rgb):
             print(1)
             return False
-    print(2)
     return True
 
 def checkLvlUp(windowInfo):
@@ -399,7 +399,7 @@ def navigateToNPC(windowInfo, NPC):
         if energo:
             energo_mode(windowInfo, "off")
             
-        time.sleep(1)
+        time.sleep(0.2)
         lvlup = checkLvlUp(windowInfo)
         if lvlup:
             log(f"сломался лвл ап чек", windowid)

@@ -9,3 +9,4 @@ pyclick
 pygetwindow
 pywin32
 pyTelegramBotAPI
+pytz

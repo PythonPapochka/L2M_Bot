@@ -12,6 +12,9 @@ from methods.game_utils import teleportToTown, energo_mode, navigateToNPC, \
     teleportToRandomSpot, respawn, buyLootAfterRIP, checkRIP, checkEnergoMode, \
     checkAutoHunt
 
+from methods.game_utils import claim_clan, claim_mail, claim_achiv, claim_daily, \
+    claim_battle_pass, claim_donate_shop
+
 from tgbot.tg import TgBotus
 
 cfg = load_config('config.ini')
@@ -333,10 +336,93 @@ class Scenary:
                 self.farm_backer_in_progress = False
 
     def process_mail(self):
-        pass
+        if not self.mail_in_progress and not self.farm_backer_in_progress and not self.pereves_in_progress and not self.banka_in_progress and not self.pvpManager.get_queue() and not self.spotManager.get_queue() and not self.deathManager.get_queue() and not self.perevesManager.get_queue():
+            mailqueue = self.mailClaimerManager.get_queue()
+            if mailqueue:
+                self.mail_in_progress = True
+                while mailqueue:
+                    window_id = mailqueue.popleft()
+                    windowname = str(window_id)
+                    data = self.settings[windowname]
+                    log(f"По графику пытаюсь собрать почту", window_id)
+                    if data["State"] not in ["death", "stashing", "shopping"]:
+                        energo = checkEnergoMode({window_id: data})
+                        if energo:
+                            energo_mode({window_id: data}, "off")
+
+                        suc = False
+
+                        if claim_mail({window_id: data}):
+                            log("Почта собрана!", window_id)
+                            suc = True
+                        else:
+                            log("Не удалось собрать почту...", window_id)
+
+                        if suc:
+                            self.mail_in_progress = False
+                            self.mailClaimerManager.remove_from_queue(window_id)
+                        else:
+                            #todo
+                            log("чет пошло не так при сборе почты по расписанию", window_id)
+                            self.mail_in_progress = False
+                            self.mailClaimerManager.remove_from_queue(window_id)
+
+                    if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue() or self.hpBankManager.get_queue():
+                        break
 
     def process_rewards(self):
-        pass
+        if not self.rewards_in_progress and not self.mail_in_progress and not self.farm_backer_in_progress and not self.pereves_in_progress and not self.banka_in_progress and not self.pvpManager.get_queue() and not self.spotManager.get_queue() and not self.deathManager.get_queue() and not self.perevesManager.get_queue():
+            rewardsqueue = self.rewardsManager.get_queue()
+            if rewardsqueue:
+                self.rewards_in_progress = True
+                while rewardsqueue:
+                    before = False
+                    window_id = rewardsqueue.popleft()
+                    windowname = str(window_id)
+                    data = self.settings[windowname]
+                    log(f"По графику пытаюсь собрать все награды кроме почты", window_id)
+                    if data["State"] not in ["death", "stashing", "shopping"]:
+                        energo = checkEnergoMode({window_id: data})
+                        if energo:
+                            before = True
+                            energo_mode({window_id: data}, "off")
+
+                        if claim_clan({window_id: data}):
+                            log("Клан собран!", window_id)
+                        else:
+                            log("Не удалось собрать клан...", window_id)
+
+                        if claim_achiv({window_id: data}):
+                            log("Ачивки собраны!", window_id)
+                        else:
+                            log("Не удалось собрать ачивки...", window_id)
+
+                        if claim_daily({window_id: data}):
+                            log("Дейлик собран!", window_id)
+                        else:
+                            log("Не удалось собрать дейлик...", window_id)
+
+                        if claim_donate_shop({window_id: data}):
+                            log("Успешно выкупил донат-шоп!", window_id)
+                        else:
+                            log("Не удалось выкупить донат-шоп...", window_id)
+
+                        if before:
+                            time.sleep(1)
+                            energo_mode(windowInfo, "on")
+
+                        if 1==1:
+                            #todo
+                            self.rewards_in_progress = False
+                            self.rewardsManager.remove_from_queue(window_id)
+                        else:
+                            #todo
+                            log("чет пошло не так при сборе наград по расписанию", window_id)
+                            self.rewards_in_progress = False
+                            self.rewardsManager.remove_from_queue(window_id)
+
+                    if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue() or self.hpBankManager.get_queue():
+                        break
 
     def run(self):
         while True:
@@ -346,6 +432,8 @@ class Scenary:
             self.process_hp_banks()
             self.process_pereves()
             self.process_farmbacker()
+            self.process_mail()
+            self.process_rewards()
 
 def main():
     scenary = Scenary()

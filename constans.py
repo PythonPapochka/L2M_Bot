@@ -2,18 +2,6 @@ SETTINGS_DIR = r"data.json"
 LOG_DIR = r"logs"
 SCENARIES_DIR = r"scenaries"
 
-SPOT_OT = 1
-SPOT_DO = 3
-
-AUTOBUY_DONATE_SHOP = "18:05" #todo
-CLAIM_REWARDS = "23:05" #todo
-
-SLEEP_AFTER_PVP_DODGE = 5 # в минутах, после пвп доджа спим перед беком на рандом спот
-SLEEP_AFTER_RIP = 3 # в минутах, после смерти спим перед беком на рандом спот
-
-TG_TOKEN = "123456789:abcd" #@BotFather
-TG_IDS = [123456789] # Тг айди админа
-
 # методом getNPCposition - получим список доступных нпс и их позиции
 NPCS = [
     "stash", "shop", "buyer"

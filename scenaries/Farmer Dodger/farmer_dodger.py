@@ -2,16 +2,23 @@ import time
 import os
 from datetime import datetime, timedelta
 from clogger import log
-from constans import SLEEP_AFTER_PVP_DODGE, SLEEP_AFTER_RIP, SPOT_OT, SPOT_DO
 
-from methods.base_methods import loadSettings, editSettingsByHWND, parseCBT, check_pixel, click_mouse
+from methods.base_methods import loadSettings, editSettingsByHWND, parseCBT, check_pixel, click_mouse, load_config
+
 from manager import PvpManager, BackToSpotManager, DeathManager, HpBankManager, PerevesManager, \
     FarmManager
+
 from methods.game_utils import teleportToTown, energo_mode, navigateToNPC, \
     teleportToRandomSpot, respawn, buyLootAfterRIP, checkRIP, checkEnergoMode, \
     checkAutoHunt
 
 from tgbot.tg import TgBotus
+
+cfg = load_config('config.ini')
+SLEEP_AFTER_PVP_DODGE = cfg.timers.SLEEP_AFTER_PVP_DODGE
+SLEEP_AFTER_RIP = cfg.timers.SLEEP_AFTER_RIP
+SPOT_OT = cfg.spots.SPOT_OT
+SPOT_DO = cfg.spots.SPOT_DO
 
 class Scenary:
     def __init__(self):
@@ -40,7 +47,6 @@ class Scenary:
         self.banka_in_progress = False
         self.pereves_in_progress = False
         self.farm_backer_in_progress = False
-
 
     def process_pvp(self):
         queue = self.pvpManager.get_queue()
@@ -308,6 +314,7 @@ class Scenary:
                 self.farm_backer_in_progress = False
 
     def run(self):
+
         while True:
             self.process_pvp()
             self.process_spots()

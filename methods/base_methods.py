@@ -10,6 +10,29 @@ import json
 import os
 import copy
 from clogger import log
+import configparser
+import ast
+
+class ConfigSection:
+    def __init__(self, section_data):
+        for key, value in section_data.items():
+            try:
+                parsed_value = ast.literal_eval(value)
+            except (ValueError, SyntaxError):
+                parsed_value = value  # если не питоновская фигня — оставляем строкой
+            setattr(self, key, parsed_value)
+
+class Config:
+    def __init__(self, config_file='config.ini'):
+        parser = configparser.ConfigParser()
+        parser.read(config_file)
+
+        for section in parser.sections():
+            section_obj = ConfigSection(parser[section])
+            setattr(self, section, section_obj)
+
+def load_config(config_file='config.ini'):
+    return Config(config_file)
 
 def parseCBT(trigger_name):
     if trigger_name in CBT:

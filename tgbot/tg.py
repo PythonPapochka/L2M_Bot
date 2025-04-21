@@ -7,9 +7,12 @@ import time
 import pyautogui
 from io import BytesIO
 from clogger import log
-from datetime import datetime, timedelta
-from constans import TG_TOKEN, TG_IDS
-from methods.base_methods import loadSettingsByHWND, loadSettings
+from datetime import datetime
+from methods.base_methods import loadSettingsByHWND, loadSettings, load_config
+
+cfg = load_config('config.ini')
+TG_TOKEN = cfg.telegram.TG_TOKEN
+TG_IDS = cfg.telegram.TG_IDS
 
 class TgBotus:
     _instance = None

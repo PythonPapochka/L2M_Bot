@@ -541,6 +541,14 @@ def checkINtown(windowInfo, timeout=120):
                 if allNPC:
                     log("Список нпс уже открыт, мы в городе", windowid)
                     return True
+
+                elif checkRIP(windowInfo):
+                    log("Умер прямо в момент тпшки в город, ресаюсь", windowid)
+                    res = respawn(windowInfo)
+                    if res:
+                        log("Встал, верну фолс", windowid)
+                        return False
+
                 else:
                     log("Все условия не пройдены, жесть", windowid)
 

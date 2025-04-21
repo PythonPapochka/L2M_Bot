@@ -176,6 +176,19 @@ class Scenary:
                         break
 
                     log(f"Пробую тпнуться в город, кончились баночки", window_id)
+                    sdoh = checkRIP({window_id: data})
+                    if sdoh:
+                        res = respawn({window_id: data})
+                        if res:
+                            energo_mode({window_id: data}, "on")
+                            log(f"Хотел купить баночки, но сдох, ресаюсь и чиллю", window_id)
+                            data["State"] = "afk"
+                            nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_RIP)
+                            data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
+                            editSettingsByHWND(window_id, data)
+                            self.hpBankManager.remove_from_queue(window_id)
+                            self.banka_in_progress = False
+
                     teleport = teleportToTown({window_id: data}, True)
                     if teleport:
                         log(f"Тпнулся в город успешно", window_id)
@@ -215,6 +228,7 @@ class Scenary:
                         self.hpBankManager.remove_from_queue(window_id)
 
                     if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue():
+                        self.banka_in_progress = False
                         break
 
                 self.banka_in_progress = False

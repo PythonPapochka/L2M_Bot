@@ -27,7 +27,6 @@ class Config:
         parser = configparser.ConfigParser()
         parser.optionxform = str
         parser.read(config_file)
-        #print(parser.sections())
 
         for section in parser.sections():
             section_obj = ConfigSection(parser[section])

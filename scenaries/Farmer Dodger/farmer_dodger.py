@@ -79,7 +79,7 @@ class Scenary:
                             data["State"] = "afk"
                             editSettingsByHWND(window_id, data)
                             energo_mode({window_id: data}, "on")
-                            self.bot.send_message("admin", f"<b>Ошибка при телепорте, возможно мы уже дохлые {result}</b>")
+                            self.bot.send_message("admin", f"<b>Шото произошло, сначала сдохли но не сдохли\nНо потом точно сдохли и реснулись\n\n{result}</b>", charid=window_id)
                             self.pvpManager.remove_from_queue(window_id)
                         else:
                             log(f"Были не дохлые, попробовал возродиться тщетно {result}", window_id)

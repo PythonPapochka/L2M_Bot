@@ -218,10 +218,18 @@ def claim_donate_shop(windowInfo):
             return False
 
         if not wait_and_click("buy_all_magaz", 5):
+            wait_and_click("close_buy_magaz", 5)
+            time.sleep(1)
             wait_and_click("npc_global_quit_button", 5)
+            log("чет пошло не так, бабахед", windowid)
             return False
 
-        time.sleep(0.5)
+        xy, rgb = parseCBT("purc_all_magaz")
+        if check_pixel(windowInfo, xy, rgb, timeout=10):
+            time.sleep(0.1)
+        else:
+            log("чет пошло не так, не трогаю окно, зырь в него", windowid)
+            return False
 
     if not wait_and_click("close_magaz", 20):
         wait_and_click("npc_global_quit_button", 5)

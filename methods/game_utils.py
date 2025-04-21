@@ -373,10 +373,10 @@ def checkLvlUp(windowInfo):
         x, y = xy
         click_mouse(windowInfo, x, y)
         time.sleep(1)
-        return False
+        return True
     else:
         log(f"??? {teleported}", windowid)
-        return True
+        return False
 
 def checkEnergoMode(windowInfo):
     windowid = next(iter(windowInfo))
@@ -603,9 +603,11 @@ def energo_mode(windowInfo, state):
 
             inputs.move_to(center_x, center_y)
             inputs.mouse_down("left")
+            inputs.mouse_up("left")
             time.sleep(0.05)
+            inputs.mouse_down("left")
             inputs.move_to(center_x - 75, center_y - 50)
-            time.sleep(0.05)
+            time.sleep(0.15)
             inputs.mouse_up("left")
             time.sleep(0.2)
             xy1, rgb1 = parseCBT("zalupka_gui")

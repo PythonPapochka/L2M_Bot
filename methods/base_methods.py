@@ -25,13 +25,16 @@ class ConfigSection:
 class Config:
     def __init__(self, config_file='config.ini'):
         parser = configparser.ConfigParser()
+        parser.optionxform = str
         parser.read(config_file)
+        #print(parser.sections())
 
         for section in parser.sections():
             section_obj = ConfigSection(parser[section])
             setattr(self, section, section_obj)
 
 def load_config(config_file='config.ini'):
+
     return Config(config_file)
 
 def parseCBT(trigger_name):

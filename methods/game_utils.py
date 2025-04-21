@@ -364,6 +364,20 @@ def checkRIP(windowInfo):
     print(2)
     return True
 
+def checkLvlUp(windowInfo):
+    windowid = next(iter(windowInfo))
+    xy, rgb = parseCBT("lvl_up_black")
+    teleported = check_pixel(windowInfo, xy, rgb, 2)
+    if teleported:
+        xy, rgb = parseCBT("lvl_up_close")
+        x, y = xy
+        click_mouse(windowInfo, x, y)
+        time.sleep(1)
+        return False
+    else:
+        log(f"??? {teleported}", windowid)
+        return True
+
 def checkEnergoMode(windowInfo):
     windowid = next(iter(windowInfo))
 
@@ -386,12 +400,9 @@ def navigateToNPC(windowInfo, NPC):
             energo_mode(windowInfo, "off")
             
         time.sleep(1)
-        xy, rgb = parseCBT("lvl_up_black")
-        teleported = check_pixel(windowInfo, xy, rgb, 2)
-        if teleported:
-            xy, rgb = parseCBT("lvl_up_close")
-            x, y = xy
-            click_mouse(windowInfo, x, y)
+        lvlup = checkLvlUp(windowInfo)
+        if lvlup:
+            log(f"сломался лвл ап чек", windowid)
 
         time.sleep(1)
         town = checkINtown(windowInfo)
@@ -476,15 +487,9 @@ def checkINtown(windowInfo, timeout=120):
     windowid = next(iter(windowInfo))
     start_time = time.time()
 
-    xy, rgb = parseCBT("lvl_up_black")
-    teleported = check_pixel(windowInfo, xy, rgb, 2)
-    if teleported:
-        xy, rgb = parseCBT("lvl_up_close")
-        x, y = xy
-        click_mouse(windowInfo, x, y)
-        print("lvl up clicked")
-    else:
-        print("no lvl up")
+    lvlup = checkLvlUp(windowInfo)
+    if lvlup:
+        log(f"сломался лвл ап чек", windowid)
 
     while time.time() - start_time < timeout:
         xy, rgb = parseCBT("white_cube_in_minimap")
@@ -569,12 +574,9 @@ def respawn(windowInfo):
         x, y = xy
         result = click_mouse(windowInfo, x, y)
         if result:
-            xy, rgb = parseCBT("lvl_up_black")
-            teleported = check_pixel(windowInfo, xy, rgb, 2)
-            if teleported:
-                xy, rgb = parseCBT("lvl_up_close")
-                x, y = xy
-                result = click_mouse(windowInfo, x, y)
+            lvlup = checkLvlUp(windowInfo)
+            if lvlup:
+                log(f"сломался лвл ап чек", windowid)
 
             xy, rgb = parseCBT("zalupka_gui")
             time.sleep(2)
@@ -607,22 +609,14 @@ def energo_mode(windowInfo, state):
             time.sleep(0.05)
             inputs.move_to(center_x - 75, center_y - 50)
             time.sleep(0.05)
-            inputs.move_to(center_x - 25, center_y - 20)
             inputs.mouse_up("left")
             time.sleep(0.2)
             xy1, rgb1 = parseCBT("zalupka_gui")
             teleported = check_pixel(windowInfo, xy1, rgb1, 10)
             if teleported:
-                log("Чекаю лвл ап залупу 123", window_id)
-                xy, rgb = parseCBT("lvl_up_black")
-                teleported = check_pixel(windowInfo, xy, rgb, 0.5)
-                if teleported:
-                    xy, rgb = parseCBT("lvl_up_close")
-                    x, y = xy
-                    result = click_mouse(windowInfo, x, y)
-                    log("Закрыл лвл ап залупу", window_id)
-                else:
-                    log("Лвл апа не было", window_id)
+                lvlup = checkLvlUp(windowInfo)
+                if lvlup:
+                    log(f"сломался лвл ап чек", windowid)
                     
                 return True
             else:
@@ -637,13 +631,9 @@ def energo_mode(windowInfo, state):
                     time.sleep(0.2)
                     
                 time.sleep(2)
-                log("Чекаю лвл ап залупу бабах", window_id)
-                xy, rgb = parseCBT("lvl_up_black")
-                teleported = check_pixel(windowInfo, xy, rgb, 0.5)
-                if teleported:
-                    xy, rgb = parseCBT("lvl_up_close")
-                    x, y = xy
-                    result = click_mouse(windowInfo, x, y)
+                lvlup = checkLvlUp(windowInfo)
+                if lvlup:
+                    log(f"сломался лвл ап чек", windowid)
                 teleported = check_pixel(windowInfo, xy1, rgb1, 3)
                 if teleported:
                     return True

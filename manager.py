@@ -237,7 +237,7 @@ class FarmManager(Manager):
 class RewardsManager(Manager):
     log("RewardsManager loaded")
     cfg = load_config()
-    SBOR_TIME = cfg.spots.CLAIM_ALL_REWARDS
+    SBOR_TIME = cfg.timers.CLAIM_ALL_REWARDS
     TIMEZONE = cfg.misc.TIMEZONE
     RECORDS = "collected.txt"
 
@@ -285,7 +285,7 @@ class RewardsManager(Manager):
 class MailClaimerManager(Manager):
     log("MailClaimerManager loaded")
     cfg = load_config()
-    MAIL_TIME = cfg.spots.CLAIM_MAIL  # типо "00:05|06:05|12:05|18:05"
+    MAIL_TIME = cfg.timers.CLAIM_MAIL  # типо "00:05|06:05|12:05|18:05"
     TIMEZONE = cfg.misc.TIMEZONE
     RECORDS = "mail.txt"
     MAX_DELAY_MINUTES = 10

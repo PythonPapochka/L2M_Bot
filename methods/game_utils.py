@@ -349,6 +349,9 @@ def buyLootAfterRIP(windowInfo):
                             x, y = xy
                             result = click_mouse(windowInfo, x, y)
                             log(f"Успешно выкупил {len(value)} шт опыта!", windowid)
+                            lvlup = checkLvlUp(windowInfo)
+                            if lvlup:
+                                log(f"сломался лвл ап чек", window_id)
                             return True
             else:
                 log("Не нужно выкупать предметы", windowid)
@@ -375,7 +378,7 @@ def checkLvlUp(windowInfo):
         time.sleep(1)
         return True
     else:
-        log(f"??? {teleported}", windowid)
+        #log(f"??? {teleported}", windowid)
         return False
 
 def checkEnergoMode(windowInfo):

@@ -387,10 +387,10 @@ def checkRIP(windowInfo):
 
     for cbt in cbts:
         xy, rgb = parseCBT(cbt)
-        if not check_pixel(windowInfo, xy, rgb):
-            #print(1)
-            return False
-    return True
+        if check_pixel(windowInfo, xy, rgb, 2):
+            return True
+
+    return False
 
 def checkLvlUp(windowInfo):
     windowid = next(iter(windowInfo))
@@ -583,7 +583,7 @@ def getNPCposition(windowInfo):
     else:
         return None
 
-def respawn(windowInfo):
+def respawn(windowInfo): #todo refactor govnocode
     windowid = next(iter(windowInfo))
     if checkEnergoMode(windowInfo):
         r = energo_mode(windowInfo, "off")

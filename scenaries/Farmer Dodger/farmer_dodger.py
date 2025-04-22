@@ -425,6 +425,7 @@ class Scenary:
                         break
 
     def run(self):
+        log("started")
         while True:
             self.process_pvp()
             self.process_spots()

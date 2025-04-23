@@ -167,7 +167,7 @@ class BackToSpotManager(Manager):
     def add_to_queue(self):
         while True:
             self.check(self.get_settings())
-            time.sleep(1)
+            time.sleep(0.2)
 
 #todo отловить вылет с сервера и закрывать либо логинить персонажа
 class ReloggerManager(Manager):
@@ -178,7 +178,7 @@ class ReloggerManager(Manager):
             #for cbt in cbts:
                 #xy_to_check, rgb_to_check = parseCBT(cbt)
                 #self.checker(self.get_settings(), rgb_to_check, xy_to_check)
-                #time.sleep(1)
+                #time.sleep(0.2)
 
 # менеджер проверки хп банок на всех окнах, если банок 0 = тпаемся в город закупаться и ставим окну InHome на 5 минут чтоб подхилился
 class HpBankManager(Manager):
@@ -210,7 +210,7 @@ class PerevesManager(Manager):
 
                     if state == "combat" and stashing == 0:
                         self.checker(settings2, rgb_to_check, xy_to_check)
-                        time.sleep(1)
+                        time.sleep(0.2)
 
 # проверяем все окна и бекаем на рандом спот если нет стейта
 class FarmManager(Manager):
@@ -231,7 +231,7 @@ class FarmManager(Manager):
     def add_to_queue(self):
         while True:
             self.check(self.get_settings())
-            time.sleep(1)
+            time.sleep(0.2)
 
 # ждем наступления времени сборов из кфг
 class RewardsManager(Manager):
@@ -279,7 +279,7 @@ class RewardsManager(Manager):
     def add_to_queue(self):
         while True:
             self.check(self.get_settings())
-            time.sleep(1)
+            time.sleep(0.2)
 
 # ждем наступления времени сборов почты из кфг
 class MailClaimerManager(Manager):
@@ -341,4 +341,66 @@ class MailClaimerManager(Manager):
     def add_to_queue(self):
         while True:
             self.check(self.get_settings())
-            time.sleep(1)
+            time.sleep(0.2)
+
+# ждем наступления времени сборов почты из кфг
+class ShopStashSellManager(Manager):
+    log("ShopStashSellManager loaded")
+    cfg = load_config()
+    MAIL_TIME = cfg.timers.SHOP_STASH_SELL  # типо "00:05|06:05|12:05|18:05"
+    TIMEZONE = cfg.misc.TIMEZONE
+    RECORDS = "shop_stash_sell.txt"
+    MAX_DELAY_MINUTES = 10
+
+    def check(self, windows_info):
+        now = datetime.now(pytz.timezone(self.TIMEZONE))
+        today_str = now.strftime("%Y-%m-%d")
+        claim_times = self.MAIL_TIME.split("|")
+
+        matched_time = None
+        for t in claim_times:
+            scheduled = datetime.strptime(f"{today_str} {t}", "%Y-%m-%d %H:%M")
+            scheduled = pytz.timezone(self.TIMEZONE).localize(scheduled)
+            if timedelta(0) <= (now - scheduled) <= timedelta(minutes=self.MAX_DELAY_MINUTES):
+                matched_time = t
+                break  # берем только самое ближайшее
+
+        if not matched_time:
+            return  # пздц, везде промах
+
+        current_key = f"{today_str}|{matched_time}"
+
+        collected = {}
+        if os.path.exists(self.RECORDS):
+            with open(self.RECORDS, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.split(",")
+                    if len(parts) >= 2:
+                        window_id = parts[0]
+                        timestamps = set(parts[1:])
+                        collected[window_id] = timestamps
+
+        for window_id, window in windows_info.items():
+            state = window.get("State")
+
+            if current_key in collected.get(window_id, set()):
+                continue  # уже собирали за это окно, покедон
+
+            if state not in ["stashing", "death", "shopping", "claiming"]:
+                try:
+                    if window_id not in self.processed_windows:
+                        with self.lock:
+                            self.q.append(window_id)
+                            self.processed_windows.add(window_id)
+                            with open(self.RECORDS, "a", encoding="utf-8") as f:
+                                f.write(f"{window_id},{current_key}\n")
+                except ValueError:
+                    continue
+
+    def add_to_queue(self):
+        while True:
+            self.check(self.get_settings())
+            time.sleep(0.2)

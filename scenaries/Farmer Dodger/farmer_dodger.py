@@ -344,13 +344,16 @@ class Scenary:
             if mailqueue:
                 self.mail_in_progress = True
                 while mailqueue:
+
                     window_id = mailqueue.popleft()
                     windowname = str(window_id)
                     data = self.settings[windowname]
                     log(f"По графику пытаюсь собрать почту", window_id)
                     if data["State"] not in ["death", "stashing", "shopping"]:
                         energo = checkEnergoMode({window_id: data})
+                        before = False
                         if energo:
+                            before = True
                             energo_mode({window_id: data}, "off")
 
                         suc = False
@@ -366,9 +369,13 @@ class Scenary:
                             self.mailClaimerManager.remove_from_queue(window_id)
                         else:
                             #todo
-                            log("чет пошло не так при сборе почты по расписанию", window_id)
+                            log("чет пошло не так при сборе почты по расписанию, возможно галочки не стоят?", window_id)
                             self.mail_in_progress = False
                             self.mailClaimerManager.remove_from_queue(window_id)
+
+                        if before:
+                            time.sleep(0.5)
+                            energo_mode({window_id: data}, "on")
 
                     if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue() or self.hpBankManager.get_queue():
                         break
@@ -410,19 +417,17 @@ class Scenary:
                         else:
                             log("Не удалось выкупить донат-шоп...", window_id)
 
-                        if before:
-                            time.sleep(1)
-                            energo_mode({window_id: data}, "on")
-
-                        if 1==1:
-                            #todo
-                            self.rewards_in_progress = False
-                            self.rewardsManager.remove_from_queue(window_id)
+                        if claim_battle_pass({window_id: data}):
+                            log("Успешно собрал весь бп", window_id)
                         else:
-                            #todo
-                            log("чет пошло не так при сборе наград по расписанию", window_id)
-                            self.rewards_in_progress = False
-                            self.rewardsManager.remove_from_queue(window_id)
+                            log("Не удалось собрать бп...", window_id)
+
+                        self.rewards_in_progress = False
+                        self.rewardsManager.remove_from_queue(window_id)
+
+                        if before:
+                            time.sleep(1.5)
+                            energo_mode({window_id: data}, "on")
 
                     if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue() or self.hpBankManager.get_queue():
                         break

@@ -84,6 +84,15 @@ def claim_mail(windowInfo):
 
 
 def claim_battle_pass(windowInfo):
+
+    def wait_and_click(tag, timeout=5):
+        xy, rgb = parseCBT(tag)
+        if check_pixel(windowInfo, xy, rgb, timeout):
+            x, y = xy
+            click_mouse(windowInfo, x, y)
+            return True
+        return False
+
     windowid = next(iter(windowInfo))
     xy_sbor1, rgb_sbor1 = parseCBT("battle_pass_sbor_1")
     xy_sbor2, rgb_sbor2 = parseCBT("battle_pass_sbor_2")
@@ -95,6 +104,14 @@ def claim_battle_pass(windowInfo):
     if checkEnergoMode(windowInfo):
         energo_mode(windowInfo, "off")
         time.sleep(0.2)
+
+    if not wait_and_click("main_menu_gui", 5):
+        return False
+
+    if not wait_and_click("battle_pass_red_dot_gui", 3):
+        log("Батлпасса нет, собирать не будем", windowid)
+        close = wait_and_click("npc_global_quit_button", 5)
+        return False
 
     tabs = find_BP_1(windowInfo)
     log(f"Обнаружил вкладок бп: {len(tabs)}, начинаю чекать...", windowid)
@@ -156,8 +173,10 @@ def claim_battle_pass(windowInfo):
 
         log("Походу собрал фулл бп, ливаю?", windowid)
 
-
-    return True
+    close = wait_and_click("npc_global_quit_button", 5)
+    if tabs:
+        return True
+    return False
 
 
 def claim_daily(windowInfo):
@@ -280,6 +299,10 @@ def claim_donate_shop(windowInfo):
 
     if not wait_and_click("magaz_gui_open", 5):
         return False
+
+    if wait_and_click("magaz_reklama_trigger", 5):
+        if wait_and_click("magaz_reklama_close", 2):
+            log("Вылезла реклама, закрыл гадость", windowid)
 
     if not wait_and_click("red_dot_magaz", 4):
         wait_and_click("npc_global_quit_button", 5)

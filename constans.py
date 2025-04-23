@@ -15,6 +15,8 @@ NPC_CHECK_BUTTONS = {
 }
 
 CBT = {
+    "magaz_reklama_close": ["388, 188", "no"],
+    "magaz_reklama_trigger": ["338, 196", "46, 46, 46"], # реклама в магазе, если ее видим то жмем по magaz_reklama_close
     "magaz_gui_open": ["302, 12", "no"], # магазин донат
     "red_dot_magaz": ["173, 27", "193, 23, 17"], # красная точка в магазе внутри магаз интерфейса
     "magaz_str_1": ["339, 53", "no"], #страница 1

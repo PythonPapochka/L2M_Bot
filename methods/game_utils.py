@@ -169,6 +169,9 @@ def claim_clan(windowInfo):
             wait_and_click("npc_global_quit_button", 5)
             time.sleep(2)
             return True
+        else:
+            close = wait_and_click("npc_global_quit_button", 5)
+            return False
 
     return False
 

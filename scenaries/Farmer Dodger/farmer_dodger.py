@@ -409,7 +409,7 @@ class Scenary:
 
                         if before:
                             time.sleep(1)
-                            energo_mode(windowInfo, "on")
+                            energo_mode({window_id: data}, "on")
 
                         if 1==1:
                             #todo

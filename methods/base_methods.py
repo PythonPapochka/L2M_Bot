@@ -3,6 +3,8 @@ import time
 import pygetwindow as gw
 from constans import SETTINGS_DIR, CBT, BATTLE_PASS
 import win32gui
+import win32process
+import win32api
 import win32con
 import numpy as np
 import mss
@@ -69,7 +71,7 @@ def find_BP_1(window_info, t=5, step=5, distance=30):
             screenshot = np.array(sct.grab(monitor))
             pixel_rgb = screenshot[0, 0][:3][::-1]  # BGR to RGB
 
-            if all(abs(pixel_rgb[i] - red_rgb[i]) <= t for i in range(3)):
+            if all(abs(int(pixel_rgb[i]) - red_rgb[i]) <= t for i in range(3)):
                 hits.append(x)
 
     buttons = []
@@ -104,7 +106,7 @@ def find_BP_2(window_info, t=5, step=3, distance=20):
             screenshot = np.array(sct.grab(monitor))
             pixel_rgb = screenshot[0, 0][:3][::-1]  # BGR to RGB
 
-            if all(abs(pixel_rgb[i] - red_rgb[i]) <= t for i in range(3)):
+            if all(abs(int(pixel_rgb[i]) - red_rgb[i]) <= t for i in range(3)):
                 hits.append(y)
 
     buttons = []
@@ -283,14 +285,27 @@ def findAllWindows():
 
     return window_info
 
-def activate_window(windowInfo): # юзлес не юзается ноо хули нет
-    if windowInfo:
-        window_id, window = next(iter(windowInfo.items()))
-        hwnd = window.get("ID")
+def activate_window(windowInfo):
+    try:
+        if windowInfo:
+            window_id, window = next(iter(windowInfo.items()))
+            hwnd = window.get("ID")
 
-        if hwnd:
-            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-            win32gui.SetForegroundWindow(hwnd)
-            return True
+            if hwnd:
+                fg_window = win32gui.GetForegroundWindow()
+                current_thread = win32api.GetCurrentThreadId()
+                fg_thread, _ = win32process.GetWindowThreadProcessId(fg_window)
+                target_thread, _ = win32process.GetWindowThreadProcessId(hwnd)
+                win32process.AttachThreadInput(current_thread, fg_thread, True)
+                win32process.AttachThreadInput(current_thread, target_thread, True)
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                win32gui.SetForegroundWindow(hwnd)
+                win32process.AttachThreadInput(current_thread, fg_thread, False)
+                win32process.AttachThreadInput(current_thread, target_thread, False)
 
-    return False
+                return True
+                
+    except Exception as e:
+        return True
+        
+    return True

@@ -112,7 +112,8 @@ def claim_battle_pass(windowInfo):
         log("Батлпасса нет, собирать не будем", windowid)
         close = wait_and_click("npc_global_quit_button", 5)
         return False
-
+    
+    time.sleep(3)
     tabs = find_BP_1(windowInfo)
     log(f"Обнаружил вкладок бп: {len(tabs)}, начинаю чекать...", windowid)
 
@@ -152,22 +153,24 @@ def claim_battle_pass(windowInfo):
                     click_mouse(windowInfo, x, y)
                     time.sleep(0.05)
                     move_mouse(windowInfo, xe, ye)
-                    time.sleep(1)
+                    time.sleep(1.2)
                 else:
                     log(f"Награды во вкладке {i} и подвкладке {q} кончились либюо их не было", windowid)
                     break
-
+            
+        time.sleep(1)
+            
         found_1 = check_pixel(windowInfo, xy_sbor2, rgb_sbor2, 2)
         found_2 = check_pixel(windowInfo, xy_sbor22, rgb_sbor22, 2)
 
         if found_1:
             x, y = xy_sbor2
             click_mouse(windowInfo, x, y)
-            time.sleep(1)
+            time.sleep(5)
         elif found_2:
             x, y = xy_sbor22
             click_mouse(windowInfo, x, y)
-            time.sleep(1)
+            time.sleep(5)
         else:
             log("Собирать нечего, иду чекать некст вкладку если она есть", windowid)
 
@@ -727,11 +730,11 @@ def energo_mode(windowInfo, state):
     inputs.auto_capture_devices(keyboard=True, mouse=True)
     if windowInfo:
         window_id, window = next(iter(windowInfo.items()))
-        activate_window(windowInfo)
         button_xy, button_rgb = parseCBT("energo_mode_gui")
         button_x, button_y = button_xy
 
         if state == "off":
+            activate_window(windowInfo)
             width = window["Width"]
             height = window["Height"]
             position_x, position_y = window["Position"]

@@ -6,7 +6,7 @@ from clogger import log
 from methods.base_methods import loadSettings, editSettingsByHWND, parseCBT, check_pixel, click_mouse, load_config
 
 from manager import PvpManager, BackToSpotManager, DeathManager, HpBankManager, PerevesManager, \
-    FarmManager, MailClaimerManager, RewardsManager
+    FarmManager, MailClaimerManager, RewardsManager, ShopStashSellManager
 
 from methods.game_utils import teleportToTown, energo_mode, navigateToNPC, \
     teleportToRandomSpot, respawn, buyLootAfterRIP, checkRIP, checkEnergoMode, \
@@ -38,6 +38,7 @@ class Scenary:
         self.farmManager = FarmManager()
         self.mailClaimerManager = MailClaimerManager()
         self.rewardsManager = RewardsManager()
+        self.shopStashManager = ShopStashSellManager()
 
         self.hpBankManager.start()
         self.spotManager.start()
@@ -47,6 +48,7 @@ class Scenary:
         self.farmManager.start()
         self.mailClaimerManager.start()
         self.rewardsManager.start()
+        self.shopStashManager.start()
 
         self.spot_in_progress = False
         self.death_in_progress = False
@@ -55,6 +57,7 @@ class Scenary:
         self.farm_backer_in_progress = False
         self.rewards_in_progress = False
         self.mail_in_progress = False
+        self.shop_stash_in_progress = False
 
     def process_pvp(self):
         queue = self.pvpManager.get_queue()
@@ -424,6 +427,50 @@ class Scenary:
                     if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue() or self.hpBankManager.get_queue():
                         break
 
+    def process_zakup_po_time(self):
+        if not self.shop_stash_in_progress and not self.rewards_in_progress and not self.mail_in_progress and not self.farm_backer_in_progress and not self.pereves_in_progress and not self.banka_in_progress and not self.pvpManager.get_queue() and not self.spotManager.get_queue() and not self.deathManager.get_queue() and not self.perevesManager.get_queue():
+            shopstashqueue = self.shopStashManager.get_queue()
+            if shopstashqueue:
+                self.shop_stash_in_progress = True
+                while shopstashqueue:
+                    before = False
+                    window_id = shopstashqueue.popleft()
+                    windowname = str(window_id)
+                    data = self.settings[windowname]
+                    log(f"По графику пытаюсь закупиться, продаться, сложиться", window_id)
+                    if data["State"] not in ["death", "stashing", "shopping"]:
+                        energo = checkEnergoMode({window_id: data})
+                        if energo:
+                            before = True
+                            energo_mode({window_id: data}, "off")
+
+                        tp = teleportToTown({window_id: data}, False)
+                        if tp:
+                            time.sleep(0.2)
+
+                            zakup1 = navigateToNPC({window_id: data}, "shop")
+                            if zakup1:
+                                log("обработал магаз успешно", window_id)
+                            zakup2 = navigateToNPC({window_id: data}, "stash")
+                            if zakup2:
+                                log("обработал стеш успешно", window_id)
+                            zakup3 = navigateToNPC({window_id: data}, "buyer")
+                            if zakup3:
+                                log("обработал скупщика успешно", window_id)
+
+                        else:
+                            log("чет пошло не так, чини =(", window_id)
+
+                        if before:
+                            time.sleep(1)
+                            energo_mode({window_id: data}, "on")
+
+                        self.shop_stash_in_progress = False
+                        self.shopStashManager.remove_from_queue(window_id)
+
+                    if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue() or self.hpBankManager.get_queue():
+                        break
+
     def run(self):
         log("started")
         while True:
@@ -435,6 +482,7 @@ class Scenary:
             self.process_farmbacker()
             self.process_mail()
             self.process_rewards()
+            self.process_zakup_po_time()
 
 def main():
     scenary = Scenary()

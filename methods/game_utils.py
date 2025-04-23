@@ -176,6 +176,7 @@ def claim_battle_pass(windowInfo):
     close = wait_and_click("npc_global_quit_button", 5)
     if tabs:
         return True
+
     return False
 
 

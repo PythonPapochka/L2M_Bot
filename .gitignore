@@ -7,3 +7,6 @@ env/
 .vscode/
 *.log
 data.json
+Test Profile
+test.py
+debug_cord.py

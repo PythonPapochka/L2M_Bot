@@ -1,7 +1,7 @@
 from interception import inputs
 import time
 import pygetwindow as gw
-from constans import SETTINGS_DIR, CBT
+from constans import SETTINGS_DIR, CBT, BATTLE_PASS
 import win32gui
 import win32con
 import numpy as np
@@ -49,6 +49,76 @@ def parseCBT(trigger_name):
 
             return xy, rgb
     return None, None
+
+def find_BP_1(window_info, t=5, step=5, distance=30):
+    window_id, window = next(iter(window_info.items()))
+    left, top = window["Position"]
+    width = window["Width"]
+
+    y_search = BATTLE_PASS["y_vkladki"]
+    red_rgb = tuple(map(int, BATTLE_PASS["red_dot_clr_vkladka"][0].split(', ')))
+
+    hits = []
+
+    with mss.mss() as sct:
+        for x in range(0, width, step):
+            adjusted_x = left + x
+            adjusted_y = top + y_search
+
+            monitor = {"left": adjusted_x, "top": adjusted_y, "width": 1, "height": 1}
+            screenshot = np.array(sct.grab(monitor))
+            pixel_rgb = screenshot[0, 0][:3][::-1]  # BGR to RGB
+
+            if all(abs(pixel_rgb[i] - red_rgb[i]) <= t for i in range(3)):
+                hits.append(x)
+
+    buttons = []
+    if hits:
+        group = [hits[0]]
+        for x in hits[1:]:
+            if x - group[-1] <= distance:
+                group.append(x)
+            else:
+                buttons.append(int(sum(group) / len(group)))  # центр
+                group = [x]
+        buttons.append(int(sum(group) / len(group))) # финалочка
+
+    return [[f"{x}, {y_search}", "no"] for x in buttons]
+
+def find_BP_2(window_info, t=5, step=3, distance=20):
+    window_id, window = next(iter(window_info.items()))
+    left, top = window["Position"]
+    height = window["Height"]
+
+    x_search = BATTLE_PASS["x_podvkladki"]
+    red_rgb = tuple(map(int, BATTLE_PASS["red_dot_clr_podvkladka"][0].split(', ')))
+
+    hits = []
+
+    with mss.mss() as sct:
+        for y in range(0, height, step):
+            adjusted_x = left + x_search
+            adjusted_y = top + y
+
+            monitor = {"left": adjusted_x, "top": adjusted_y, "width": 1, "height": 1}
+            screenshot = np.array(sct.grab(monitor))
+            pixel_rgb = screenshot[0, 0][:3][::-1]  # BGR to RGB
+
+            if all(abs(pixel_rgb[i] - red_rgb[i]) <= t for i in range(3)):
+                hits.append(y)
+
+    buttons = []
+    if hits:
+        group = [hits[0]]
+        for y in hits[1:]:
+            if y - group[-1] <= distance:
+                group.append(y)
+            else:
+                buttons.append(int(sum(group) / len(group)))  # центр
+                group = [y]
+        buttons.append(int(sum(group) / len(group))) # финалочка
+
+    return [[f"{x_search}, {y}", "no"] for y in buttons]
 
 def check_pixel(window_info, xy, rgb, timeout=0.2):
     wait_time = 0.01

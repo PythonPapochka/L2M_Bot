@@ -2,7 +2,8 @@ from interception import inputs
 import time
 from clogger import log
 from constans import NPCS, NPC_CHECK_BUTTONS
-from methods.base_methods import click_mouse, parseCBT, check_pixel, load_config, activate_window
+from methods.base_methods import click_mouse, parseCBT, check_pixel, load_config, activate_window, find_BP_1, find_BP_2, \
+    move_mouse
 import json
 import random
 
@@ -81,9 +82,83 @@ def claim_mail(windowInfo):
 
     return True
 
+
 def claim_battle_pass(windowInfo):
-    #todo
-    pass
+    windowid = next(iter(windowInfo))
+    xy_sbor1, rgb_sbor1 = parseCBT("battle_pass_sbor_1")
+    xy_sbor2, rgb_sbor2 = parseCBT("battle_pass_sbor_2")
+    xy_sbor22, rgb_sbor22 = parseCBT("battle_pass_sbor_2_2")
+    xy_empty, rgb_empty = parseCBT("battle_pass_empty")
+    xe, ye = xy_empty
+
+
+    if checkEnergoMode(windowInfo):
+        energo_mode(windowInfo, "off")
+        time.sleep(0.2)
+
+    tabs = find_BP_1(windowInfo)
+    log(f"Обнаружил вкладок бп: {len(tabs)}, начинаю чекать...", windowid)
+
+    for i, tab in enumerate(tabs, 1):
+        if len(tab) >= 2:
+            x, y = map(int, tab[0].split(", "))
+            xy = (x, y)
+
+            if tab[1] == "no":
+                rgb = "no"
+            else:
+                r, g, b = map(int, tab[1].split(", "))
+                rgb = (r, g, b)
+
+        x, y = xy
+        click_mouse(windowInfo, x, y)
+
+        podtabs = find_BP_2(windowInfo)
+        for q, podtab in enumerate(podtabs, 1):
+            if len(podtab) >= 2:
+                x, y = map(int, podtab[0].split(", "))
+                xy = (x, y)
+
+                if podtab[1] == "no":
+                    rgb = "no"
+                else:
+                    r, g, b = map(int, podtab[1].split(", "))
+                    rgb = (r, g, b)
+
+            x, y = xy
+            click_mouse(windowInfo, x, y)
+
+            while True:
+                if check_pixel(windowInfo, xy_sbor1, rgb_sbor1, 2):
+                    log(f"Вижу цель во вкладке {i} и подвкладке {q}, собираю!", windowid)
+                    x, y = xy_sbor1
+                    click_mouse(windowInfo, x, y)
+                    time.sleep(0.05)
+                    move_mouse(windowInfo, xe, ye)
+                    time.sleep(1)
+                else:
+                    log(f"Награды во вкладке {i} и подвкладке {q} кончились либюо их не было", windowid)
+                    break
+
+        found_1 = check_pixel(windowInfo, xy_sbor2, rgb_sbor2, 2)
+        found_2 = check_pixel(windowInfo, xy_sbor22, rgb_sbor22, 2)
+
+        if found_1:
+            x, y = xy_sbor2
+            click_mouse(windowInfo, x, y)
+            time.sleep(1)
+        elif found_2:
+            x, y = xy_sbor22
+            click_mouse(windowInfo, x, y)
+            time.sleep(1)
+        else:
+            log("Собирать нечего, иду чекать некст вкладку если она есть", windowid)
+
+        log("Походу собрал фулл бп, ливаю?", windowid)
+
+
+    return True
+
 
 def claim_daily(windowInfo):
     def wait_and_click(tag, timeout=5):

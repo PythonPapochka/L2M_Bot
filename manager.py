@@ -49,7 +49,7 @@ def get_cached_settings():
 
 # базовый класс с которого все наследуем
 class Manager:
-    log("BaseManager loaded")
+
     def __init__(self):
         self.settings = loadSettings()
         self.q = deque()
@@ -95,6 +95,7 @@ class Manager:
         return results.pop() if len(results) == 1 else None
 
     def start(self):
+        log("BaseManager loaded")
         t = threading.Thread(target=self.add_to_queue)
         t.daemon = True
         t.start()
@@ -123,8 +124,8 @@ class Manager:
 
 # менеджер смертей, проверяет все окна на то умерли ли они
 class DeathManager(Manager):
-    log("DeathManager loaded")
     def add_to_queue(self):
+        log("DeathManager loaded")
         cbts = ["you_were_killed_energomode", "check_death_penalty", "respawn_village"]
         while True:
             for cbt in cbts:
@@ -134,8 +135,8 @@ class DeathManager(Manager):
 
 # менеджер пвп, проверяет все окна на то бьют ли их
 class PvpManager(Manager):
-    log("PvpManager loaded")
     def add_to_queue(self):
+        log("PvpManager loaded")
         xy_to_check, rgb_to_check = parseCBT("pvp_energo_trigger")
         while True:
             #print("начал чекать чет пвп менеджером")
@@ -145,7 +146,6 @@ class PvpManager(Manager):
 # менеджер возвращения из города, проверяет настройки всех окон
 # на наличие InHome != null, если там есть время то после наступления этого времени должны вернуться на спот
 class BackToSpotManager(Manager):
-    log("BackToSpotManager loaded")
     def check(self, windows_info):
         current_time = datetime.now()
 
@@ -165,6 +165,7 @@ class BackToSpotManager(Manager):
                     continue
 
     def add_to_queue(self):
+        log("BackToSpotManager loaded")
         while True:
             self.check(self.get_settings())
             time.sleep(0.2)
@@ -182,8 +183,8 @@ class ReloggerManager(Manager):
 
 # менеджер проверки хп банок на всех окнах, если банок 0 = тпаемся в город закупаться и ставим окну InHome на 5 минут чтоб подхилился
 class HpBankManager(Manager):
-    log("HpBankManager loaded")
     def add_to_queue(self):
+        log("HpBankManager loaded")
         xy_to_check, rgb_to_check = parseCBT("hp_bank_in_energo")
         while True:
             settings2 = self.get_settings()
@@ -197,8 +198,8 @@ class HpBankManager(Manager):
 
 # менеджер проверки сумки, уведет окно если будет 50% или 80% перевеса
 class PerevesManager(Manager):
-    log("PerevesManager loaded")
     def add_to_queue(self):
+        log("PerevesManager loaded")
         while True:
             settings2 = self.get_settings()
             cbts = ["pereves1", "pereves2"]
@@ -214,7 +215,6 @@ class PerevesManager(Manager):
 
 # проверяем все окна и бекаем на рандом спот если нет стейта
 class FarmManager(Manager):
-    log("FarmManager loaded")
     def check(self, windows_info):
         for window_id, window in windows_info.items():
             state = window.get("State")
@@ -229,13 +229,13 @@ class FarmManager(Manager):
                     continue
 
     def add_to_queue(self):
+        log("FarmManager loaded")
         while True:
             self.check(self.get_settings())
             time.sleep(0.2)
 
 # ждем наступления времени сборов из кфг
 class RewardsManager(Manager):
-    log("RewardsManager loaded")
     cfg = load_config()
     SBOR_TIME = cfg.timers.CLAIM_ALL_REWARDS
     TIMEZONE = cfg.misc.TIMEZONE
@@ -277,13 +277,13 @@ class RewardsManager(Manager):
                         continue
 
     def add_to_queue(self):
+        log("RewardsManager loaded")
         while True:
             self.check(self.get_settings())
             time.sleep(0.2)
 
 # ждем наступления времени сборов почты из кфг
 class MailClaimerManager(Manager):
-    log("MailClaimerManager loaded")
     cfg = load_config()
     MAIL_TIME = cfg.timers.CLAIM_MAIL  # типо "00:05|06:05|12:05|18:05"
     TIMEZONE = cfg.misc.TIMEZONE
@@ -339,13 +339,13 @@ class MailClaimerManager(Manager):
                     continue
 
     def add_to_queue(self):
+        log("MailClaimerManager loaded")
         while True:
             self.check(self.get_settings())
             time.sleep(0.2)
 
 # ждем наступления времени сборов почты из кфг
 class ShopStashSellManager(Manager):
-    log("ShopStashSellManager loaded")
     cfg = load_config()
     MAIL_TIME = cfg.timers.SHOP_STASH_SELL  # типо "00:05|06:05|12:05|18:05"
     TIMEZONE = cfg.misc.TIMEZONE
@@ -401,6 +401,7 @@ class ShopStashSellManager(Manager):
                     continue
 
     def add_to_queue(self):
+        log("ShopStashSellManager loaded")
         while True:
             self.check(self.get_settings())
             time.sleep(0.2)

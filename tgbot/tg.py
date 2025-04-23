@@ -13,6 +13,7 @@ from methods.base_methods import loadSettingsByHWND, loadSettings, load_config
 cfg = load_config('config.ini')
 TG_TOKEN = cfg.telegram.TG_TOKEN
 TG_IDS = cfg.telegram.TG_IDS
+BOT_ACTIVE = cfg.telegram.TG_BOT
 
 class TgBotus:
     _instance = None
@@ -140,7 +141,7 @@ class TgBotus:
                 "🔗 https://github.com/PythonPapochka/L2M_Bot"
             )
 
-            target_short = "🎮 L2M Bot (JP edition) — сборщик, фармер.\n✅ Бесплатно и с исходниками 👇\n🔗 https://github.com/PythonPapochka/L2M_Bot"
+            target_short = "🎮 L2M Bot (JP edition) — сборщик, фармер.\n✅ Бесплатно и с исходниками\n🔗 https://github.com/PythonPapochka/L2M_Bot"
             target_commands = [
                 telebot.types.BotCommand("menu", "Открыть меню"),
             ]
@@ -163,11 +164,15 @@ class TgBotus:
 
     def start_polling(self):
         if not self._polling_started:
-            log("tg bot started epta")
-            self.configure_bot()
-            self.polling_thread = threading.Thread(target=self.bot.infinity_polling, daemon=True)
-            self.polling_thread.start()
-            self._polling_started = True
+            if BOT_ACTIVE:
+                log("tg bot started epta")
+                self.configure_bot()
+                self.polling_thread = threading.Thread(target=self.bot.infinity_polling, daemon=True)
+                self.polling_thread.start()
+                self._polling_started = True
+            else:
+                log("tg bot not active")
+                return
 
     def split_send_message(self, chat_id, msg, max_length=4096, reply_markup=None):
         if len(msg) > max_length:
@@ -179,6 +184,9 @@ class TgBotus:
             self.bot.send_message(chat_id, msg, parse_mode='HTML', reply_markup=reply_markup)
 
     def send_message(self, chat_id, text, reply_markup=None, charid=None):
+        if not BOT_ACTIVE:
+            return
+
         if chat_id == "admin":
             chat_ids = TG_IDS
         else:

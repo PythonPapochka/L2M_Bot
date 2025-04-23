@@ -2,7 +2,7 @@ from interception import inputs
 import time
 from clogger import log
 from constans import NPCS, NPC_CHECK_BUTTONS
-from methods.base_methods import click_mouse, parseCBT, check_pixel, load_config
+from methods.base_methods import click_mouse, parseCBT, check_pixel, load_config, activate_window
 import json
 import random
 
@@ -628,7 +628,7 @@ def energo_mode(windowInfo, state):
     inputs.auto_capture_devices(keyboard=True, mouse=True)
     if windowInfo:
         window_id, window = next(iter(windowInfo.items()))
-
+        activate_window(windowInfo)
         button_xy, button_rgb = parseCBT("energo_mode_gui")
         button_x, button_y = button_xy
 
@@ -644,12 +644,9 @@ def energo_mode(windowInfo, state):
             time.sleep(0.1)
 
             inputs.mouse_down("left")
-            inputs.mouse_up("left") #kostyl не проходил клик в окно и не снимало с энерго, если кликнуть дважды то норм
             time.sleep(0.15)
-            inputs.mouse_down("left")
-            inputs.mouse_up("left")
-
-            time.sleep(0.05)
+            inputs.mouse_up("left") #kostyl не проходил клик в окно и не снимало с энерго, если кликнуть дважды то норм
+            time.sleep(0.3)
             inputs.mouse_down("left")
             inputs.move_to(center_x - 75, center_y - 50)
             time.sleep(0.15)
@@ -674,7 +671,7 @@ def energo_mode(windowInfo, state):
                     inputs.mouse_up("left")
                     time.sleep(0.2)
                     
-                time.sleep(2)
+                time.sleep(1)
                 lvlup = checkLvlUp(windowInfo)
                 if lvlup:
                     log(f"сломался лвл ап чек", window_id)

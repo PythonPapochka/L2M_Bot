@@ -1,3 +1,4 @@
+import threading
 import time
 import os
 from datetime import datetime, timedelta
@@ -73,7 +74,7 @@ class Scenary:
                     if result:
                         log(f"ez dodge sasai lalka {window_id}", window_id)
                         self.bot.send_message("admin", f"<b>Доджнул пвп, сплю {SLEEP_AFTER_PVP_DODGE} минут</b>", charid=window_id)
-                        time.sleep(1.5)
+                        time.sleep(0.5)
                         energo_mode({window_id: data}, "on")
                         log(f"sleep {SLEEP_AFTER_PVP_DODGE}", window_id)
                         nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_PVP_DODGE)
@@ -93,8 +94,8 @@ class Scenary:
                             self.bot.send_message("admin", f"<b>Шото произошло, сначала сдохли но не сдохли\nНо потом точно сдохли и реснулись\n\n{result}</b>", charid=window_id)
                             self.pvpManager.remove_from_queue(window_id)
                         else:
-                            log(f"Были не дохлые, попробовал возродиться тщетно {result}", window_id)
-                            self.bot.send_message("admin", f"<b>Ошибка при телепорте от пвп, чет случилось очень злое {result}</b>")
+                            log(f"Были не дохлые, попробовал возродиться тщетно {result}, чета случилось не обработанное", window_id)
+                            self.bot.send_message("admin", f"<b>Ошибка при телепорте от пвп, чет случилось очень злое и не обработанное {result}</b>", charid=window_id)
                             self.pvpManager.remove_from_queue(window_id)
                             
 
@@ -486,8 +487,8 @@ class Scenary:
 
     def run(self):
         log("started")
+        tthreading.Thread(target=self.process_pvp, daemon=True).start()
         while True:
-            self.process_pvp()
             self.process_spots()
             self.process_death()
             self.process_hp_banks()

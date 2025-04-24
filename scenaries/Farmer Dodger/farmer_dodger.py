@@ -449,29 +449,37 @@ class Scenary:
                             before = True
                             energo_mode({window_id: data}, "off")
 
-                        tp = teleportToTown({window_id: data}, False)
-                        if tp:
-                            time.sleep(0.2)
+                        if data["State"] == "combat":
+                            tp = teleportToTown({window_id: data}, True)
+                            if tp:
+                                time.sleep(1.2)
 
-                            zakup1 = navigateToNPC({window_id: data}, "shop")
-                            if zakup1:
-                                log("обработал магаз успешно", window_id)
-                            zakup2 = navigateToNPC({window_id: data}, "stash")
-                            if zakup2:
-                                log("обработал стеш успешно", window_id)
-                            zakup3 = navigateToNPC({window_id: data}, "buyer")
-                            if zakup3:
-                                log("обработал скупщика успешно", window_id)
+                                zakup1 = navigateToNPC({window_id: data}, "shop")
+                                if zakup1:
+                                    log("обработал магаз успешно", window_id)
 
-                        else:
-                            log("чет пошло не так, чини =(", window_id)
+                                zakup2 = navigateToNPC({window_id: data}, "stash")
+                                if zakup2:
+                                    log("обработал стеш успешно", window_id)
+
+                                zakup3 = navigateToNPC({window_id: data}, "buyer")
+                                if zakup3:
+                                    log("обработал скупщика успешно", window_id)
+
+                                time.sleep(1.2)
+                                teleportToRandomSpot({window_id: data}, SPOT_OT, SPOT_DO)
+                                self.shop_stash_in_progress = False
+                                self.shopStashManager.remove_from_queue(window_id)
+                                break
+
+                            else:
+                                log("чет пошло не так, чини =(", window_id)
 
                         if before:
                             time.sleep(1)
                             energo_mode({window_id: data}, "on")
-
-                        self.shop_stash_in_progress = False
-                        self.shopStashManager.remove_from_queue(window_id)
+                            self.shop_stash_in_progress = False
+                            self.shopStashManager.remove_from_queue(window_id)
 
                     if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue() or self.hpBankManager.get_queue():
                         break

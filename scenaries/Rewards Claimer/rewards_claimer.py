@@ -56,11 +56,15 @@ class Scenary:
                 else:
                     log("Не удалось выкупить донат-шоп...", nickname)
 
+                if claim_battle_pass(windowInfo):
+                    log("Собрал фулл бп", nickname)
+                else:
+                    log("Не смог собрать бп...", nickname)
+
                 if before:
                     time.sleep(2)
                     energo_mode(windowInfo, "on")
-                    time.sleep(2)
-                    
+
         return
 
     def run(self):

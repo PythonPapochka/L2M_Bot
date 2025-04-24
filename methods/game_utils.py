@@ -355,10 +355,13 @@ def checkAutoHunt(windowInfo):
 def teleportToTown(windowInfo, energo):
     windowid = next(iter(windowInfo))
 
-    if checkEnergoMode(windowInfo):
-        xy, rgb = parseCBT("home_scroll_button_energomode")
+    if not energo:
+        if checkEnergoMode(windowInfo):
+            xy, rgb = parseCBT("home_scroll_button_energomode")
+        else:
+            xy, rgb = parseCBT("home_scroll_button_no_energomode")
     else:
-        xy, rgb = parseCBT("home_scroll_button_no_energomode")
+        xy, rgb = parseCBT("home_scroll_button_energomode")
 
     if xy and rgb and check_pixel(windowInfo, xy, rgb, 2):
         x, y = xy
@@ -378,7 +381,6 @@ def teleportToTown(windowInfo, energo):
             time.sleep(0.1)
 
         if check_pixel(windowInfo, gui_xy, gui_rgb, 10):
-            time.sleep(1)
             return True
 
     return False
@@ -492,7 +494,7 @@ def checkRIP(windowInfo):
 
     for cbt in cbts:
         xy, rgb = parseCBT(cbt)
-        if check_pixel(windowInfo, xy, rgb, 2):
+        if check_pixel(windowInfo, xy, rgb, 0.5):
             return True
 
     return False
@@ -537,7 +539,6 @@ def navigateToNPC(windowInfo, NPC):
         if lvlup:
             log(f"сломался лвл ап чек", windowid)
 
-        time.sleep(1)
         town = checkINtown(windowInfo)
         if town:
             npcPositions = getNPCposition(windowInfo)
@@ -559,7 +560,7 @@ def navigateToNPC(windowInfo, NPC):
 
                         def click_button(button_name):
                             if button_name in ["npc_shop_button_1", "npc_stash_button_1", "npc_buyer_button_1"]:
-                                time.sleep(1)
+                                time.sleep(0.3)
                             xy, rgb = parseCBT(button_name)
                             x, y = xy
                             result = check_pixel(windowInfo, xy, rgb, 1)
@@ -616,7 +617,7 @@ def navigateToNPC(windowInfo, NPC):
         log(f"{NPC} не существует", windowid)
         return False
 
-def checkINtown(windowInfo, timeout=120):
+def checkINtown(windowInfo, timeout=20):
     windowid = next(iter(windowInfo))
     start_time = time.time()
 
@@ -748,7 +749,7 @@ def energo_mode(windowInfo, state):
             inputs.mouse_down("left")
             time.sleep(0.15)
             inputs.mouse_up("left") #kostyl не проходил клик в окно и не снимало с энерго, если кликнуть дважды то норм
-            time.sleep(0.3)
+            time.sleep(0.1)
             inputs.mouse_down("left")
             inputs.move_to(center_x - 75, center_y - 50)
             time.sleep(0.15)

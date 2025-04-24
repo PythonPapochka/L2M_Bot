@@ -487,8 +487,8 @@ class Scenary:
 
     def run(self):
         log("started")
-        tthreading.Thread(target=self.process_pvp, daemon=True).start()
         while True:
+            self.process_pvp()
             self.process_spots()
             self.process_death()
             self.process_hp_banks()

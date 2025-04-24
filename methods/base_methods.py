@@ -180,7 +180,6 @@ def click_mouse(windowInfo, x_offset, y_offset, button="left"):
     inputs.move_to(absolute_x, absolute_y)
     inputs.mouse_down(button)
     inputs.mouse_up(button)
-    time.sleep(0.1)
     return True
 
 def loadSettings(): #todo переписать говнокод

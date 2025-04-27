@@ -572,7 +572,7 @@ def navigateToNPC(windowInfo, NPC):
         if current_npc in NPC_CHECK_BUTTONS:
             xy, rgb = parseCBT(NPC_CHECK_BUTTONS[current_npc])
             attempts = 0
-            while not check_pixel(windowInfo, xy, rgb, 0.8):
+            while not check_pixel(windowInfo, xy, rgb, 2):
                 time.sleep(0.02)
                 attempts += 1
                 if attempts >= 1000:
@@ -580,7 +580,7 @@ def navigateToNPC(windowInfo, NPC):
 
             def click_button(button_name):
                 if button_name in ["npc_shop_button_1", "npc_stash_button_1", "npc_buyer_button_1"]:
-                    time.sleep(0.18)
+                    time.sleep(0.15)
                 xy, rgb = parseCBT(button_name)
                 x, y = xy
                 result = check_pixel(windowInfo, xy, rgb, 1)
@@ -685,7 +685,7 @@ def checkINtown(windowInfo, timeout=20):
 
 def getNPCposition(windowInfo):
     npc_mapping = {}
-
+    time.sleep(2)
     for j in range(3, 5):
         xy, rgb = parseCBT(f"npc_list_{j}")
         result = check_pixel(windowInfo, xy, rgb, 0.2)

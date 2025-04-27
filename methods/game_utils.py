@@ -6,6 +6,7 @@ from methods.base_methods import click_mouse, parseCBT, check_pixel, load_config
     move_mouse
 import json
 import random
+import math
 
 def claim_achiv(windowInfo):
     claimed = False
@@ -344,13 +345,12 @@ def claim_donate_shop(windowInfo):
     return True
 
 def checkAutoHunt(windowInfo):
-    if checkEnergoMode(windowInfo):
-        xy, rgb = parseCBT("auto_combat_ON")
-        result = check_pixel(windowInfo, xy, rgb, 10)
-        if result:
-            return True
-
-    return False
+    xy, rgb = parseCBT("auto_combat_ON")
+    result = check_pixel(windowInfo, xy, rgb, 8)
+    if result:
+        return True
+    else:
+        return False
 
 def teleportToTown(windowInfo, energo):
     windowid = next(iter(windowInfo))
@@ -738,15 +738,13 @@ def respawn(windowInfo): #todo refactor govnocode
                 log(f"сломался лвл ап чек", windowid)
 
             xy, rgb = parseCBT("zalupka_gui")
-            time.sleep(2)
+            time.sleep(1)
             teleported = check_pixel(windowInfo, xy, rgb, 5)
             if teleported:
                 log("Успешно восстал из мертвых", windowid)
-                time.sleep(1)
                 return True
 
     return False
-
 
 def energo_mode(windowInfo, state):
     inputs.auto_capture_devices(keyboard=True, mouse=True)
@@ -760,31 +758,27 @@ def energo_mode(windowInfo, state):
             width = window["Width"]
             height = window["Height"]
             position_x, position_y = window["Position"]
-
             center_x = position_x + width // 2
             center_y = position_y + height // 2
+            radius = 15
 
             inputs.move_to(center_x, center_y)
-            time.sleep(0.1)
-            inputs.mouse_down("left")
             time.sleep(0.05)
-            inputs.mouse_up("left")
-
-            time.sleep(0.1)
             inputs.mouse_down("left")
-            time.sleep(0.1)
 
-            distance = 30
-            inputs.move_to(center_x - distance, center_y - distance)
-            time.sleep(0.02)
-            inputs.move_to(center_x + distance, center_y - distance)
-            time.sleep(0.02)
-            inputs.move_to(center_x + distance, center_y + distance)
-            time.sleep(0.02)
-            inputs.move_to(center_x - distance, center_y + distance)
-            time.sleep(0.02)
+            points = []
+            for i in range(5):
+                angle = math.pi / 2 + 2 * math.pi * i / 5
+                x = center_x + radius * math.cos(angle)
+                y = center_y - radius * math.sin(angle)
+                points.append((x, y))
 
-            inputs.move_to(center_x, center_y)
+            zv = [points[0], points[2], points[4], points[1], points[3], points[0]]
+
+            for x, y in zv:
+                inputs.move_to(x, y)
+                time.sleep(0.01)
+
             inputs.mouse_up("left")
             xy1, rgb1 = parseCBT("zalupka_gui")
             teleported = check_pixel(windowInfo, xy1, rgb1, 10)

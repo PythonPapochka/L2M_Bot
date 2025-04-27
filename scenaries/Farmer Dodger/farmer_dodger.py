@@ -131,7 +131,7 @@ class Scenary:
     def process_death(self):
         if not self.death_in_progress and not self.pvpManager.get_queue() and not self.spotManager.get_queue():
             death_queue = self.deathManager.get_queue()
-
+           # print(f"DEATH {death_queue}")
             if death_queue:
                 self.death_in_progress = True
 
@@ -170,7 +170,7 @@ class Scenary:
     def process_hp_banks(self):
          if not self.banka_in_progress and not self.pvpManager.get_queue() and not self.spotManager.get_queue() and not self.deathManager.get_queue():
             bankaqueue = self.hpBankManager.get_queue()
-
+            #print(f"banka {bankaqueue}")
             if bankaqueue:
                 xy_to_check, rgb_to_check = parseCBT("hp_bank_in_energo")
                 self.banka_in_progress = True
@@ -180,13 +180,13 @@ class Scenary:
                     data = self.settings[windowname]
                     is_true = check_pixel({window_id: data}, xy_to_check, rgb_to_check, 3)
                     if not is_true:
-                        log(f"Ложное срабатывание банки", window_id)
+                        log(f"Ложное срабатывание банки, мб были в стане", window_id)
                         self.banka_in_progress = False
                         self.hpBankManager.remove_from_queue(window_id)
                         break
 
                     if data["State"] != "combat":
-                        log(f"Ложное срабатывание банки", window_id)
+                        log(f"Ложное срабатывание банки, скорее всего стоим в стане", window_id)
                         self.banka_in_progress = False
                         self.hpBankManager.remove_from_queue(window_id)
                         break
@@ -296,6 +296,9 @@ class Scenary:
                         self.farmManager.remove_from_queue(window_id)
                         self.farm_backer_in_progress = False
                         break
+                    else:
+                        print(autohunt)
+                        print("monkey")
 
                     energo = checkEnergoMode({window_id: data})
                     if energo:
@@ -303,7 +306,6 @@ class Scenary:
 
                     teleport = teleportToRandomSpot({window_id: data}, SPOT_OT, SPOT_DO)
                     if teleport:
-                        time.sleep(3)
                         hunt = checkAutoHunt({window_id: data})
                         if hunt:
                             data["State"] = "combat"

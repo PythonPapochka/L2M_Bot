@@ -1,19 +1,18 @@
 from interception import inputs
 import time
 import pygetwindow as gw
-from constans import SETTINGS_DIR, CBT, BATTLE_PASS
+from constans import CBT_JP, BATTLE_PASS
 import win32gui
 import win32process
 import win32api
 import win32con
 import numpy as np
 import mss
-import json
-import os
-import copy
-from clogger import log
 import configparser
 import ast
+import threading
+import copy
+from typing import Dict, Any
 
 class ConfigSection:
     def __init__(self, section_data):
@@ -35,12 +34,11 @@ class Config:
             setattr(self, section, section_obj)
 
 def load_config(config_file='config.ini'):
-
     return Config(config_file)
 
 def parseCBT(trigger_name):
-    if trigger_name in CBT:
-        coordinates = CBT[trigger_name]
+    if trigger_name in CBT_JP:
+        coordinates = CBT_JP[trigger_name]
 
         if len(coordinates) == 2:
             xy = tuple(map(int, coordinates[0].split(", ")))
@@ -182,83 +180,53 @@ def click_mouse(windowInfo, x_offset, y_offset, button="left"):
     inputs.mouse_up(button)
     return True
 
-def loadSettings(): #todo переписать говнокод
-    if os.path.exists(SETTINGS_DIR):
-        try:
-            with open(SETTINGS_DIR, 'r') as file:
-                settings = json.load(file)
+class SettingsManager:
+    _instance = None
+    _lock = threading.Lock()
+    _initialized = False
 
-                if not settings:
-                    log("Настройки пустые, обновляю файл")
-                    current_windows = findAllWindows()
-                    saveSettings(current_windows)
-                    return current_windows
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super(SettingsManager, cls).__new__(cls)
+                    cls._instance._settings = {}
+                    cls._instance._settings_lock = threading.RLock()
+                    cls._instance._initialized = False
+        return cls._instance
 
-        except json.JSONDecodeError as e:
-            log(f"Файл настроек повреждён, пересоздаю =( {e}")
-            current_windows = findAllWindows()
-            saveSettings(current_windows)
-            return current_windows
-    else:
-        log("Файл настроек не найден. Создаю новый.")
+    def __init__(self):
+        if not self._initialized:
+            with self._settings_lock:
+                if not self._initialized:
+                    self._initializeSettings()
+                    self._initialized = True
+
+    def _initializeSettings(self):
         current_windows = findAllWindows()
-        saveSettings(current_windows)
-        return current_windows
 
-    current_windows = findAllWindows()
-    updated = False
+        with self._settings_lock:
+            self._settings.clear()
+            for hwnd, new_info in current_windows.items():
+                nickname = new_info.get("Nickname", str(hwnd))
+                self._settings[nickname] = copy.deepcopy(new_info)
 
-    for hwnd, new_info in current_windows.items():
-        nickname = new_info.get("Nickname", str(hwnd))
+    def loadSettings(self) -> Dict[str, Any]:
+        with self._settings_lock:
+            return self._settings
 
-        if nickname in settings:
-            saved_info = settings[nickname]
-            updated_info = copy.deepcopy(saved_info)
+    def editSettingsByHWND(self, hwnd: int, new_settings: Dict[str, Any]) -> bool:
+        hwnd_str = str(hwnd)
+        with self._settings_lock:
+            if hwnd_str in self._settings:
+                self._settings[hwnd_str].update(copy.deepcopy(new_settings))
+                return True
+            return False
 
-            updated_info["ID"] = new_info["ID"]
-            updated_info["Position"] = new_info["Position"]
-            updated_info["Width"] = new_info["Width"]
-            updated_info["Height"] = new_info["Height"]
-            updated_info["Size"] = new_info["Size"]
-
-            if updated_info != saved_info:
-                settings[nickname] = updated_info
-                updated = True
-        else:
-            settings[nickname] = new_info
-            updated = True
-
-    current_hwnds = set(str(hwnd) for hwnd in current_windows.keys())
-    saved_hwnds = set(settings.keys())
-
-    to_remove = saved_hwnds - current_hwnds
-    for nickname in to_remove:
-        del settings[nickname]
-        updated = True
-
-    if updated and settings:
-        saveSettings(settings)
-
-    return settings
-
-def editSettingsByHWND(hwnd, new_settings):
-    settings = loadSettings()
-
-    if str(hwnd) in settings:
-        current_settings = settings[str(hwnd)]
-        if current_settings != new_settings:
-            settings[str(hwnd)].update(new_settings)
-            saveSettings(settings)
-    else:
-        log(f"pzdc {hwnd}")
-
-def loadSettingsByHWND(hwnd):
-    settings = loadSettings()
-    return settings.get(str(hwnd), None)
-
-def saveSettings(settings):
-    with open(SETTINGS_DIR, 'w') as file:
-        json.dump(settings, file, indent=4)
+    def loadSettingsByHWND(self, hwnd: int) -> Dict[str, Any]:
+        hwnd_str = str(hwnd)
+        with self._settings_lock:
+            return copy.deepcopy(self._settings.get(hwnd_str))
 
 def findAllWindows():
     all_windows = gw.getWindowsWithTitle("Lineage2M")

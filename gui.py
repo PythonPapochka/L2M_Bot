@@ -4,11 +4,14 @@ import subprocess
 import psutil
 from functools import partial
 from PyQt5 import QtWidgets, QtGui, QtCore
-from methods.base_methods import loadSettings
+from methods.base_methods import SettingsManager
 from constans import SCENARIES_DIR
 from clogger import log
 from tgbot.tg import TgBotus
 import json
+import time
+
+settingsm = SettingsManager()
 
 class gui(QtWidgets.QWidget):
     def __init__(self):
@@ -24,7 +27,12 @@ class gui(QtWidgets.QWidget):
         self.is_paused = False
         self.selected_button = None
 
-        self.settings = loadSettings()
+        self.start_time = None
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.update_timer)
+        self.elapsed_time = 0
+
+        self.settings = settingsm.loadSettings()
         self.bot = TgBotus()
         self.bot_thread = threading.Thread(target=self.bot.start_polling, daemon=True)
         self.bot_thread.start()
@@ -53,6 +61,33 @@ class gui(QtWidgets.QWidget):
         title.setStyleSheet("color: white; font: bold 16pt 'Segoe UI';")
         header.addWidget(title)
         header.addStretch()
+
+        self.region_btn = QtWidgets.QPushButton("JP")
+        self.region_btn.setFixedSize(50, 30)
+        self.region_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2E2E2E;
+                color: white;
+                font: bold 10pt 'Segoe UI';
+                border-radius: 15px;
+                border: 2px solid transparent;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #444444;
+                border: 2px solid #00BFFF;
+            }
+            QPushButton:pressed {
+                background-color: #555555;
+                border: 2px solid #00FF00;
+            }
+            QPushButton:focus {
+                outline: none;
+            }
+        """)
+        self.region_btn.clicked.connect(self.changer_reg)
+        header.addWidget(self.region_btn)
+        container_layout.addLayout(header)
 
         minimize_btn = QtWidgets.QPushButton("")
         minimize_btn.setFixedSize(30, 30)
@@ -83,11 +118,10 @@ class gui(QtWidgets.QWidget):
         """)
         close_btn.clicked.connect(self.close_app)
         header.addWidget(close_btn)
-        container_layout.addLayout(header)
 
-        self.search_input = QtWidgets.QLineEdit()
-        self.search_input.setPlaceholderText("🔍 Поиск... (для даунов)")
-        self.search_input.setStyleSheet("""
+        self.searcher = QtWidgets.QLineEdit()
+        self.searcher.setPlaceholderText("🔍 Поиск... (для даунов)")
+        self.searcher.setStyleSheet("""
             QLineEdit {
                 background-color: rgba(255, 255, 255, 40);
                 border-radius: 10px;
@@ -99,22 +133,78 @@ class gui(QtWidgets.QWidget):
                 background-color: rgba(255, 255, 255, 60);
             }
         """)
-        self.search_input.textChanged.connect(self.filter_scenaries)
-        container_layout.addWidget(self.search_input)
+        self.searcher.textChanged.connect(self.filter_scenaries)
+        container_layout.addWidget(self.searcher)
 
         self.buttons = []
         self.scenary_map = {}
 
-        self.scroll_area = QtWidgets.QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setStyleSheet("background-color: transparent; border: none;")
+        self.scroller = QtWidgets.QScrollArea()
+        self.scroller.setWidgetResizable(True)
+        self.scroller.setStyleSheet("background-color: transparent; border: none;")
         self.scroll_content = QtWidgets.QWidget()
         self.scroll_layout = QtWidgets.QVBoxLayout(self.scroll_content)
         self.scroll_layout.setAlignment(QtCore.Qt.AlignTop)
+        self.scroller.setStyleSheet("""
+            QScrollArea {
+                background: transparent;
+            }
+            QScrollArea > QWidget > QWidget {
+                background: transparent;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background: transparent;
+                width: 12px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #888;
+                border-radius: 6px;
+                min-height: 20px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #555;
+            }
+            QScrollBar::add-line:vertical {
+                background: transparent;
+                border: none;
+                height: 0px;
+            }
+            QScrollBar::sub-line:vertical {
+                background: transparent;
+                border: none;
+                height: 0px;
+            }
+            QScrollBar:horizontal {
+                border: none;
+                background: transparent;
+                height: 12px;
+                margin: 0px;
+            }
+            QScrollBar::handle:horizontal {
+                background: #888;
+                border-radius: 6px;
+                min-width: 20px;
+            }
+            QScrollBar::handle:horizontal:hover {
+                background: #555;
+            }
+            QScrollBar::add-line:horizontal {
+                background: transparent; 
+                border: none;
+                width: 0px;
+            }
+            QScrollBar::sub-line:horizontal {
+                background: transparent;
+                border: none;
+                width: 0px;
+            }
+        """)
 
         self.scroll_content.setLayout(self.scroll_layout)
-        self.scroll_area.setWidget(self.scroll_content)
-        container_layout.addWidget(self.scroll_area)
+        self.scroller.setWidget(self.scroll_content)
+        container_layout.addWidget(self.scroller)
 
         self.load_scenaries()
         self.bot.set_scenaries(self.get_scenaries())
@@ -131,7 +221,7 @@ class gui(QtWidgets.QWidget):
         for btn in [self.run_button, self.pause_button, self.stop_button]:
             btn.setEnabled(False)
             btn.setStyleSheet(self.get_control_style())
-            btn.setGraphicsEffect(self.create_button_shadow())
+            btn.setGraphicsEffect(self.shadower())
             container_layout.addWidget(btn)
 
         self.pause_button.clicked.connect(self.pause_resume_scenary)
@@ -153,8 +243,40 @@ class gui(QtWidgets.QWidget):
         spacer = QtWidgets.QSpacerItem(1, 20)
         container_layout.addItem(spacer)
         container_layout.addWidget(self.wmark, alignment=QtCore.Qt.AlignCenter)
-
         layout.addWidget(container)
+        self.timer_label = QtWidgets.QLabel("00:00:00:00")
+        self.timer_label.setStyleSheet("""
+            color: rgba(255, 255, 255, 0.5); 
+            font: 9pt 'Segoe UI'; 
+            background-color: rgba(51, 51, 51, 0.5); 
+            padding: 2px 6px; 
+            border-radius: 5px;
+            font-weight: normal;
+            opacity: 0.7;
+        """)
+        self.timer_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.timer_label.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Fixed)
+        container_layout.addWidget(self.timer_label, alignment=QtCore.Qt.AlignCenter)
+
+
+    def update_timer(self):
+        if self.start_time:
+            self.elapsed_time = time.time() - self.start_time
+
+            days = int(self.elapsed_time // 86400)
+            hours = int((self.elapsed_time % 86400) // 3600)
+            minutes = int((self.elapsed_time % 3600) // 60)
+            seconds = int(self.elapsed_time % 60)
+
+            self.timer_label.setText(f"{days:02}:{hours:02}:{minutes:02}:{seconds:02}")
+
+    def changer_reg(self):
+        if self.region_btn.text() == "RU":
+            self.region_btn.setText("JP")
+            log("когда-то будет")
+        else:
+            self.region_btn.setText("RU")
+            log("когда-то будет говорю епта")
 
     def get_button_style(self):
         return """
@@ -209,7 +331,7 @@ class gui(QtWidgets.QWidget):
             }
         """
 
-    def create_button_shadow(self):
+    def shadower(self):
         shadow = QtWidgets.QGraphicsDropShadowEffect()
         shadow.setBlurRadius(4)
         shadow.setColor(QtGui.QColor(0, 255, 153, 120))
@@ -239,7 +361,7 @@ class gui(QtWidgets.QWidget):
             btn = QtWidgets.QPushButton(f"▶ {display}")
             btn.setStyleSheet(self.get_button_style())
             btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-            btn.setGraphicsEffect(self.create_button_shadow())
+            btn.setGraphicsEffect(self.shadower())
             btn.clicked.connect(partial(self.on_scenary_click, dir_path, main_file, btn))
             self.scroll_layout.addWidget(btn)
             self.buttons.append(btn)
@@ -292,6 +414,9 @@ class gui(QtWidgets.QWidget):
         if dir_path is None:
             return  # защита от ДАУНА
 
+        self.start_time = time.time()
+        self.timer.start(1000)
+
         script = os.path.join(dir_path, main_file)
         # командная строка: импорт и вызов main()
         cmd = [
@@ -324,6 +449,7 @@ class gui(QtWidgets.QWidget):
 
         threading.Thread(target=target, daemon=True).start()
 
+
     def stop_scenary(self):
         if not self.current_process:
             return
@@ -333,6 +459,9 @@ class gui(QtWidgets.QWidget):
                 child.kill()
             proc.kill()
             self.update_status("Остановлен")
+            self.timer.stop()
+            self.elapsed_time = 0
+            self.timer_label.setText("00:00:00:00")
             self.bot.set_current_scenario(None)
         except Exception as e:
             self.update_status(f"Ошибка остановки: {e}")
@@ -372,6 +501,8 @@ class gui(QtWidgets.QWidget):
         self.stop_scenary()
         self.close()
 
+    #хвала роме харону
+    #@BotLineage2M
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             self.old_pos = event.globalPos()

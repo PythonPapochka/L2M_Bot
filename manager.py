@@ -1,7 +1,7 @@
 from clogger import log
 import numpy as np
 import mss
-from methods.base_methods import loadSettings, parseCBT, load_config
+from methods.base_methods import SettingsManager, parseCBT, load_config
 from datetime import datetime, timedelta
 import pytz
 import threading
@@ -9,6 +9,8 @@ import time
 import os
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+settingsm = SettingsManager()
 
 def pixel_checkManager(window, rgb, xy, timeout=0.02):
     if rgb == "no":
@@ -42,16 +44,17 @@ def get_cached_settings():
     global _settings_cache, _settings_timestamp
     with _settings_lock:
         now = time.time()
-        if now - _settings_timestamp > 1.2 or _settings_cache is None: #todo сделать норм одни настройки для всех, багует если дрочить быстро
-            _settings_cache = loadSettings()
+        if now - _settings_timestamp > 0.05 or _settings_cache is None: #todo сделать норм одни настройки для всех, багует если дрочить быстро
+            _settings_cache = settingsm.loadSettings()
             _settings_timestamp = now
+            #print(_settings_cache)
         return _settings_cache
 
 # базовый класс с которого все наследуем
 class Manager:
 
     def __init__(self):
-        self.settings = loadSettings()
+        self.settings = settingsm.loadSettings()
         self.q = deque()
         self.processed_windows = set()
         self.lock = threading.Lock()
@@ -136,12 +139,17 @@ class DeathManager(Manager):
 # менеджер пвп, проверяет все окна на то бьют ли их
 class PvpManager(Manager):
     def add_to_queue(self):
+        cfg = load_config()
         log("PvpManager loaded")
         xy_to_check, rgb_to_check = parseCBT("pvp_energo_trigger")
-        while True:
-            #print("начал чекать чет пвп менеджером")
-            self.checker(self.get_settings(), rgb_to_check, xy_to_check, recheck=1)
-            time.sleep(0.5)
+        if cfg.misc.PVP_DODGER:
+            while True:
+                #print("начал чекать чет пвп менеджером")
+                self.checker(self.get_settings(), rgb_to_check, xy_to_check, recheck=1)
+                time.sleep(0.5)
+        else:
+            log("pokedildo pvp")
+            return
 
 # менеджер возвращения из города, проверяет настройки всех окон
 # на наличие InHome != null, если там есть время то после наступления этого времени должны вернуться на спот
@@ -184,17 +192,22 @@ class ReloggerManager(Manager):
 # менеджер проверки хп банок на всех окнах, если банок 0 = тпаемся в город закупаться и ставим окну InHome на 5 минут чтоб подхилился
 class HpBankManager(Manager):
     def add_to_queue(self):
+        cfg = load_config()
         log("HpBankManager loaded")
         xy_to_check, rgb_to_check = parseCBT("hp_bank_in_energo")
-        while True:
-            settings2 = self.get_settings()
-            for window_id, window in settings2.items():
-                state = window.get("State")
-                in_home = window.get("InHome")
-                if state == "combat" and in_home == "null":
-                    #print("хп банка чет чекает 4 раза")
-                    self.checker(settings2, rgb_to_check, xy_to_check, recheck=4)
-                    time.sleep(0.5)
+        if cfg.misc.BANKA_CHECKER:
+            while True:
+                settings2 = self.get_settings()
+                for window_id, window in settings2.items():
+                    state = window.get("State")
+                    in_home = window.get("InHome")
+                    if state == "combat" and in_home == "null":
+                        #print("хп банка чет чекает 4 раза")
+                        self.checker(settings2, rgb_to_check, xy_to_check, recheck=4)
+                        time.sleep(0.5)
+        else:
+            log("pokedildo banka")
+            return
 
 # менеджер проверки сумки, уведет окно если будет 50% или 80% перевеса
 class PerevesManager(Manager):
@@ -209,7 +222,8 @@ class PerevesManager(Manager):
                     state = window.get("State")
                     stashing = window.get("Stashing")
 
-                    if state == "combat" and stashing == 0:
+                    if state == "combat" and stashing != 0:
+                        log(stashing)
                         self.checker(settings2, rgb_to_check, xy_to_check)
                         time.sleep(0.2)
 

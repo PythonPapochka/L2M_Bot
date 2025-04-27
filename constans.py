@@ -1,4 +1,3 @@
-SETTINGS_DIR = r"data.json"
 LOG_DIR = r"logs"
 SCENARIES_DIR = r"scenaries"
 
@@ -14,7 +13,10 @@ NPC_CHECK_BUTTONS = {
     "buyer": "npc_buyer_button_1",
 }
 
-CBT = {
+#todo ру сервак допилить но то не скоро, сделаю задел в гуи и хватит
+CBT_RU = {}
+
+CBT_JP = {
     "magaz_reklama_close": ["388, 188", "no"],
     "magaz_reklama_trigger": ["338, 196", "46, 46, 46"], # реклама в магазе, если ее видим то жмем по magaz_reklama_close
     "magaz_gui_open": ["302, 12", "no"], # магазин донат

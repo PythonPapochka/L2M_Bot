@@ -363,24 +363,28 @@ def teleportToTown(windowInfo, energo):
     else:
         xy, rgb = parseCBT("home_scroll_button_energomode")
 
-    if xy and rgb and check_pixel(windowInfo, xy, rgb, 2):
+    if xy and rgb and check_pixel(windowInfo, xy, rgb, 0.5):
         x, y = xy
         gui_xy, gui_rgb = parseCBT("zalupka_gui")
         start_time = time.time()
-        timeout = 4
+        timeout = 10
 
         while time.time() - start_time < timeout:
-            if check_pixel(windowInfo, gui_xy, gui_rgb, 1):
+            if check_pixel(windowInfo, gui_xy, gui_rgb, 0.5):
                 break
+            else:
+                log("еще тпаюсь", windowid)
 
-            if check_pixel(windowInfo, xy, rgb, 2):
+            if check_pixel(windowInfo, xy, rgb, 0.5):
                 click_mouse(windowInfo, x, y)
             else:
                 break
 
-            time.sleep(0.1)
+            time.sleep(0.05)
 
-        if check_pixel(windowInfo, gui_xy, gui_rgb, 10):
+        if check_pixel(windowInfo, gui_xy, gui_rgb, 0.5):
+            log("тпнулся", windowid)
+            time.sleep(2)
             return True
 
     return False
@@ -529,93 +533,109 @@ def checkEnergoMode(windowInfo):
 
 def navigateToNPC(windowInfo, NPC):
     windowid = next(iter(windowInfo))
-    if NPC in NPCS:
-        energo = checkEnergoMode(windowInfo)
-        if energo:
-            energo_mode(windowInfo, "off")
-            
+    NPC_list = NPC.split("|") if "|" in NPC else [NPC]
+
+    for npc in NPC_list:
+        if npc not in NPCS:
+            log(f"{npc} не существует", windowid)
+            return False
+
+    energo = checkEnergoMode(windowInfo)
+    if energo:
+        energo_mode(windowInfo, "off")
         time.sleep(0.2)
-        lvlup = checkLvlUp(windowInfo)
-        if lvlup:
-            log(f"сломался лвл ап чек", windowid)
 
-        town = checkINtown(windowInfo)
-        if town:
-            npcPositions = getNPCposition(windowInfo)
-            if npcPositions:
-                if NPC in npcPositions:
-                    json_pos = json.loads(npcPositions)
-                    data = json_pos[NPC]
-                    xy, rgb = parseCBT(data)
-                    x, y = xy
-                    click_mouse(windowInfo, x, y)
-                    if NPC in NPC_CHECK_BUTTONS:
-                        xy, rgb = parseCBT(NPC_CHECK_BUTTONS[NPC])
-                        attempts = 0
-                        while not check_pixel(windowInfo, xy, rgb, 0.02):
-                            time.sleep(0.02)
-                            attempts += 1
-                            if attempts >= 1000:
-                                return False
+    lvlup = checkLvlUp(windowInfo)
+    if lvlup:
+        log(f"сломался лвл ап чек", windowid)
 
-                        def click_button(button_name):
-                            if button_name in ["npc_shop_button_1", "npc_stash_button_1", "npc_buyer_button_1"]:
-                                time.sleep(0.3)
-                            xy, rgb = parseCBT(button_name)
-                            x, y = xy
-                            result = check_pixel(windowInfo, xy, rgb, 1)
-                            if result:
-                                time.sleep(0.4)
-                                return click_mouse(windowInfo, x, y)
-                            elif not result and button_name in ["npc_shop_button_2", "npc_stash_button_2", "npc_buyer_button_2"]:
-                                return True
-                            return False
-
-                        def waitAndClick(buttons):
-                            for button in buttons:
-                                if not click_button(button):
-                                    if button in ["npc_shop_button_2", "npc_stash_button_2", "npc_buyer_button_2"]:
-                                        return False
-                                    return False
-                            return True
-
-                        if NPC == "shop":
-                            if waitAndClick(["npc_shop_button_1", "npc_shop_button_2", "npc_shop_button_3"]):
-                                result = click_button("npc_global_quit_button")
-                                if result:
-                                    return True
-                            else:
-                                result = click_button("npc_global_quit_button")
-                                if result:
-                                    return True
-
-                        if NPC == "stash":
-                            if waitAndClick(["npc_stash_button_1", "npc_stash_button_2"]):
-                                result = click_button("npc_global_quit_button")
-                                if result:
-                                    return True
-                            else:
-                                result = click_button("npc_global_quit_button")
-                                if result:
-                                    return True
-
-                        elif NPC == "buyer":
-                            if waitAndClick(["npc_buyer_button_1", "npc_buyer_button_2", "npc_buyer_button_3"]):
-                                result = click_button("npc_global_quit_button")
-                                if result:
-                                    return True
-                            else:
-                                result = click_button("npc_global_quit_button")
-                                if result:
-                                    return True
-
-                    return False
-            else:
-                log("? error in navigate", windowid)
-                return False
-    else:
-        log(f"{NPC} не существует", windowid)
+    town, allNPC = checkINtown(windowInfo)
+    if not town:
         return False
+
+    npcPositions = allNPC
+    if not npcPositions:
+        log("? error in navigate", windowid)
+        return False
+
+    json_pos = json.loads(npcPositions)
+
+    for current_npc in NPC_list:
+        if current_npc not in json_pos:
+            continue
+
+        data = json_pos[current_npc]
+        xy, rgb = parseCBT(data)
+        x, y = xy
+        click_mouse(windowInfo, x, y)
+
+        if current_npc in NPC_CHECK_BUTTONS:
+            xy, rgb = parseCBT(NPC_CHECK_BUTTONS[current_npc])
+            attempts = 0
+            while not check_pixel(windowInfo, xy, rgb, 0.8):
+                time.sleep(0.02)
+                attempts += 1
+                if attempts >= 1000:
+                    return False
+
+            def click_button(button_name):
+                if button_name in ["npc_shop_button_1", "npc_stash_button_1", "npc_buyer_button_1"]:
+                    time.sleep(0.18)
+                xy, rgb = parseCBT(button_name)
+                x, y = xy
+                result = check_pixel(windowInfo, xy, rgb, 1)
+                if result:
+                    time.sleep(0.1)
+                    return click_mouse(windowInfo, x, y)
+                elif not result and button_name in ["npc_shop_button_2", "npc_stash_button_2", "npc_buyer_button_2"]:
+                    return True
+                return False
+
+            def waitAndClick(buttons):
+                for button in buttons:
+                    if not click_button(button):
+                        if button in ["npc_shop_button_2", "npc_stash_button_2", "npc_buyer_button_2"]:
+                            return False
+                        return False
+                return True
+
+            if current_npc == "shop":
+                if waitAndClick(["npc_shop_button_1", "npc_shop_button_2", "npc_shop_button_3"]):
+                    result = click_button("npc_global_quit_button")
+                    if result:
+                        time.sleep(0.05)
+                        continue
+                else:
+                    result = click_button("npc_global_quit_button")
+                    if not result:
+                        time.sleep(0.05)
+                        return False
+
+            if current_npc == "stash":
+                if waitAndClick(["npc_stash_button_1", "npc_stash_button_2"]):
+                    result = click_button("npc_global_quit_button")
+                    if result:
+                        time.sleep(0.05)
+                        continue
+                else:
+                    result = click_button("npc_global_quit_button")
+                    if not result:
+                        time.sleep(0.05)
+                        return False
+
+            elif current_npc == "buyer":
+                if waitAndClick(["npc_buyer_button_1", "npc_buyer_button_2", "npc_buyer_button_3"]):
+                    result = click_button("npc_global_quit_button")
+                    if result:
+                        time.sleep(0.05)
+                        continue
+                else:
+                    result = click_button("npc_global_quit_button")
+                    if not result:
+                        time.sleep(0.05)
+                        return False
+
+    return True
 
 def checkINtown(windowInfo, timeout=20):
     windowid = next(iter(windowInfo))
@@ -637,38 +657,38 @@ def checkINtown(windowInfo, timeout=20):
                 allNPC = getNPCposition(windowInfo)
                 if allNPC:
                     log("Нахожусь в городе, список нпс открыт", windowid)
-                    return True
+                    return True, allNPC
         else:
             if checkEnergoMode(windowInfo):
                 log("Не нашел карту, мы в энергомоде", windowid)
-                return False
+                return False, None
             else:
                 allNPC = getNPCposition(windowInfo)
                 if allNPC:
                     log("Список нпс уже открыт, мы в городе", windowid)
-                    return True
+                    return True, allNPC
 
                 elif checkRIP(windowInfo):
                     log("Умер прямо в момент тпшки в город, ресаюсь", windowid)
                     res = respawn(windowInfo)
                     if res:
                         log("Встал, верну фолс", windowid)
-                        return False
+                        return False, None
 
                 else:
                     log("Все условия не пройдены, жесть", windowid)
 
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     log("Не удалось определить, в городе ли мы =(", windowid)
-    return False
+    return False, None
 
 def getNPCposition(windowInfo):
     npc_mapping = {}
 
     for j in range(3, 5):
         xy, rgb = parseCBT(f"npc_list_{j}")
-        result = check_pixel(windowInfo, xy, rgb, 2)
+        result = check_pixel(windowInfo, xy, rgb, 0.2)
 
         if result:
             if j == 3:
@@ -727,6 +747,7 @@ def respawn(windowInfo): #todo refactor govnocode
 
     return False
 
+
 def energo_mode(windowInfo, state):
     inputs.auto_capture_devices(keyboard=True, mouse=True)
     if windowInfo:
@@ -745,16 +766,26 @@ def energo_mode(windowInfo, state):
 
             inputs.move_to(center_x, center_y)
             time.sleep(0.1)
-
             inputs.mouse_down("left")
-            time.sleep(0.15)
-            inputs.mouse_up("left") #kostyl не проходил клик в окно и не снимало с энерго, если кликнуть дважды то норм
+            time.sleep(0.05)
+            inputs.mouse_up("left")
+
             time.sleep(0.1)
             inputs.mouse_down("left")
-            inputs.move_to(center_x - 75, center_y - 50)
-            time.sleep(0.15)
+            time.sleep(0.1)
+
+            distance = 30
+            inputs.move_to(center_x - distance, center_y - distance)
+            time.sleep(0.02)
+            inputs.move_to(center_x + distance, center_y - distance)
+            time.sleep(0.02)
+            inputs.move_to(center_x + distance, center_y + distance)
+            time.sleep(0.02)
+            inputs.move_to(center_x - distance, center_y + distance)
+            time.sleep(0.02)
+
+            inputs.move_to(center_x, center_y)
             inputs.mouse_up("left")
-            time.sleep(0.2)
             xy1, rgb1 = parseCBT("zalupka_gui")
             teleported = check_pixel(windowInfo, xy1, rgb1, 10)
             if teleported:

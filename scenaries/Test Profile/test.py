@@ -2,12 +2,14 @@ import time
 import os
 from clogger import log
 
-from methods.base_methods import loadSettings
+from methods.base_methods import SettingsManager
 
 from methods.game_utils import energo_mode, checkEnergoMode, \
-    claim_battle_pass
+    claim_battle_pass, teleportToTown, teleportToRandomSpot, navigateToNPC
 
 from tgbot.tg import TgBotus
+
+settingsm = SettingsManager()
 
 class Scenary:
     def __init__(self):
@@ -15,26 +17,23 @@ class Scenary:
         self.filename = os.path.splitext(os.path.basename(__file__))[0]
         self.bot.send_message("admin", f"✅ <b>Успешно запустили сценарий!</b>\n<code>{self.filename}</code>")
 
-        self.settings = loadSettings()
+        self.settings = settingsm.loadSettings()
 
     def process_rewards(self):
         for nickname, data in self.settings.items():
             before = False
             windowInfo = {nickname: data}
-            log("Пробую чекнуть кол-во вкладок бп", nickname)
             windowdata = data["State"] #todo допилить чтоб не собирало бп у... у кого?
             if windowdata not in ["death", "stashing", "shopping", "claiming"]:
-                energomode = checkEnergoMode(windowInfo)
-                if energomode:
-                    before = True
-                    energo_mode(windowInfo, "off")
 
-                ress = claim_battle_pass(windowInfo)
+                tp = teleportToTown({nickname: data}, True)
+                if tp:
+                    zakup1 = navigateToNPC({nickname: data}, "shop|stash|buyer")
+                    if zakup1:
+                        log("yes", nickname)
 
-                if before:
-                    time.sleep(2)
-                    energo_mode(windowInfo, "on")
-                    time.sleep(2)
+                    time.sleep(0.1)
+                    teleportToRandomSpot({nickname: data}, 1, 1)
 
         return
 

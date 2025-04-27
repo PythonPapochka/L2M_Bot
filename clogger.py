@@ -49,8 +49,9 @@ def log(message, context="global", level="INFO"):
     if context == "global":
         log_filename = "log.log"
     else:
-        from methods.base_methods import loadSettingsByHWND
-        settings = loadSettingsByHWND(context)
+        from methods.base_methods import SettingsManager
+        settingsm = SettingsManager()
+        settings = settingsm.loadSettingsByHWND(context)
         if settings:
             nickname = settings.get("Nickname", "-")
             log_filename = f"{nickname}.log"

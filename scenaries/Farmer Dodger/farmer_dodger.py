@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 from clogger import log
 
-from methods.base_methods import loadSettings, editSettingsByHWND, parseCBT, check_pixel, click_mouse, load_config
+from methods.base_methods import SettingsManager, parseCBT, check_pixel, click_mouse, load_config
 
 from manager import PvpManager, BackToSpotManager, DeathManager, HpBankManager, PerevesManager, \
     FarmManager, MailClaimerManager, RewardsManager, ShopStashSellManager
@@ -23,12 +23,13 @@ SLEEP_AFTER_PVP_DODGE = cfg.timers.SLEEP_AFTER_PVP_DODGE
 SLEEP_AFTER_RIP = cfg.timers.SLEEP_AFTER_RIP
 SPOT_OT = cfg.spots.SPOT_OT
 SPOT_DO = cfg.spots.SPOT_DO
+settingsm = SettingsManager()
 
 class Scenary:
     def __init__(self):
         self.bot = TgBotus()
         self.filename = os.path.splitext(os.path.basename(__file__))[0]
-        self.settings = loadSettings()
+        self.settings = settingsm.loadSettings()
         self.bot.send_message("admin", f"✅ <b>Успешно запустили сценарий!</b>\n<code>{self.filename}</code>")
 
         self.hpBankManager = HpBankManager()
@@ -41,15 +42,15 @@ class Scenary:
         self.rewardsManager = RewardsManager()
         self.shopStashManager = ShopStashSellManager()
 
-        self.hpBankManager.start()
-        self.spotManager.start()
-        self.pvpManager.start()
-        self.deathManager.start()
-        self.perevesManager.start()
-        self.farmManager.start()
-        self.mailClaimerManager.start()
-        self.rewardsManager.start()
-        self.shopStashManager.start()
+        threading.Thread(target=self.hpBankManager.start).start()
+        threading.Thread(target=self.spotManager.start).start()
+        threading.Thread(target=self.pvpManager.start).start()
+        threading.Thread(target=self.deathManager.start).start()
+        threading.Thread(target=self.perevesManager.start).start()
+        threading.Thread(target=self.farmManager.start).start()
+        threading.Thread(target=self.mailClaimerManager.start).start()
+        threading.Thread(target=self.rewardsManager.start).start()
+        threading.Thread(target=self.shopStashManager.start).start()
 
         self.spot_in_progress = False
         self.death_in_progress = False
@@ -62,7 +63,9 @@ class Scenary:
 
     def process_pvp(self):
         queue = self.pvpManager.get_queue()
-        #print(f"pvp {queue}")
+        #print(f"pvp {que
+        # ue}")
+        #log(self.settings)
         if queue:
             while queue:
                 window_id = queue.popleft()
@@ -80,7 +83,7 @@ class Scenary:
                         nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_PVP_DODGE)
                         data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
                         data["State"] = "afk"
-                        editSettingsByHWND(window_id, data)
+                        settingsm.editSettingsByHWND(window_id, data)
                         self.pvpManager.remove_from_queue(window_id)
                     else:
                         log(f"Ошибка при телепорте, возможно мы уже дохлые: {result}", window_id)
@@ -89,7 +92,7 @@ class Scenary:
                             nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_PVP_DODGE)
                             data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
                             data["State"] = "afk"
-                            editSettingsByHWND(window_id, data)
+                            settingsm.editSettingsByHWND(window_id, data)
                             energo_mode({window_id: data}, "on")
                             self.bot.send_message("admin", f"<b>Шото произошло, сначала сдохли но не сдохли\nНо потом точно сдохли и реснулись\n\n{result}</b>", charid=window_id)
                             self.pvpManager.remove_from_queue(window_id)
@@ -114,7 +117,7 @@ class Scenary:
                     teleportToRandomSpot({window_id: data}, SPOT_OT, SPOT_DO)
                     data["InHome"] = "null"
                     data["State"] = "combat"
-                    editSettingsByHWND(window_id, data)
+                    settingsm.editSettingsByHWND(window_id, data)
                     self.bot.send_message("admin", f"<b>Вернул на спот после сна</b>", charid=window_id)
                     log(f"Вернул на спот после сна", window_id)
                     self.spotManager.remove_from_queue(window_id)
@@ -142,7 +145,7 @@ class Scenary:
                     if revive_result:
                         log(f"Чар {window_id} помер, пытаюсь воскресить", window_id)
                         data["State"] = "death"
-                        editSettingsByHWND(window_id, data)
+                        settingsm.editSettingsByHWND(window_id, data)
                         result = respawn({window_id: data})
                         if result:
                             log(f"Успешно воскрес", window_id)
@@ -154,7 +157,7 @@ class Scenary:
                                 nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_RIP)
                                 data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
                                 data["State"] = "afk"
-                                editSettingsByHWND(window_id, data)
+                                settingsm.editSettingsByHWND(window_id, data)
                                 self.bot.send_message("admin", f"<b>Реснул перса, выкупил опыт и шмотки</b>", charid=window_id)
                                 self.deathManager.remove_from_queue(window_id)
 
@@ -182,6 +185,12 @@ class Scenary:
                         self.hpBankManager.remove_from_queue(window_id)
                         break
 
+                    if data["State"] != "combat":
+                        log(f"Ложное срабатывание банки", window_id)
+                        self.banka_in_progress = False
+                        self.hpBankManager.remove_from_queue(window_id)
+                        break
+
                     log(f"Пробую тпнуться в город, кончились баночки", window_id)
                     sdoh = checkRIP({window_id: data})
                     if sdoh:
@@ -192,7 +201,7 @@ class Scenary:
                             data["State"] = "afk"
                             nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_RIP)
                             data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
-                            editSettingsByHWND(window_id, data)
+                            settingsm.editSettingsByHWND(window_id, data)
                             self.hpBankManager.remove_from_queue(window_id)
                             self.banka_in_progress = False
 
@@ -200,7 +209,7 @@ class Scenary:
                     if teleport:
                         log(f"Тпнулся в город успешно", window_id)
                         data["State"] = "shopping"
-                        editSettingsByHWND(window_id, data)
+                        settingsm.editSettingsByHWND(window_id, data)
                         time.sleep(0.3)
                         log(f"Пробую пойти к магазу", window_id)
                         result = navigateToNPC({window_id: data}, "shop")
@@ -213,7 +222,7 @@ class Scenary:
                             log(f"После закупки и тп - {result}, {result2}", window_id)
                             data["InHome"] = "null"
                             data["State"] = "combat"
-                            editSettingsByHWND(window_id, data)
+                            settingsm.editSettingsByHWND(window_id, data)
                             self.bot.send_message("admin",
                                               f"<b>Купил банки и вернул на спот</b>", charid=window_id)
                             log(f"Купил банки и вернул на спот", window_id)
@@ -222,7 +231,7 @@ class Scenary:
                             log(f"Чет пошло не так, не закупился и не тпнулся, ставлю окну афк + нулл", window_id)
                             data["InHome"] = "null"
                             data["State"] = "afk"
-                            editSettingsByHWND(window_id, data)
+                            settingsm.editSettingsByHWND(window_id, data)
                             self.hpBankManager.remove_from_queue(window_id)
 
                         self.hpBankManager.remove_from_queue(window_id)
@@ -231,7 +240,7 @@ class Scenary:
                         log(f"teleport to buy banks - {teleport}", window_id)
                         data["InHome"] = "null"
                         data["State"] = "afk"
-                        editSettingsByHWND(window_id, data)
+                        settingsm.editSettingsByHWND(window_id, data)
                         self.hpBankManager.remove_from_queue(window_id)
 
                     if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue():
@@ -259,7 +268,7 @@ class Scenary:
                                 data["InHome"] = "null"
                                 data["State"] = "combat"
                                 data["Stashing"] = 1
-                                editSettingsByHWND(window_id, data)
+                                settingsm.editSettingsByHWND(window_id, data)
                                 self.bot.send_message("admin",
                                                       f"<b>Скинул шмот на склад, у нас был перевес, задумайся...</b>", charid=window_id)
                                 log(f"Скинул шмот на склад, у нас был перевес", window_id)
@@ -283,7 +292,7 @@ class Scenary:
                     if autohunt:
                         log(f"Персонаж уже в бою, не возвращаем", window_id)
                         data["State"] = "combat"
-                        editSettingsByHWND(window_id, data)
+                        settingsm.editSettingsByHWND(window_id, data)
                         self.farmManager.remove_from_queue(window_id)
                         self.farm_backer_in_progress = False
                         break
@@ -298,7 +307,7 @@ class Scenary:
                         hunt = checkAutoHunt({window_id: data})
                         if hunt:
                             data["State"] = "combat"
-                            editSettingsByHWND(window_id, data)
+                            settingsm.editSettingsByHWND(window_id, data)
                             self.bot.send_message("admin",
                                                   f"<b>Перс был не в бою, поставил на рандом спот</b>",
                                                   charid=window_id)
@@ -322,7 +331,7 @@ class Scenary:
                                     energo_mode({window_id: data}, "on")
                                     time.sleep(0.05)
                                     data["State"] = "combat"
-                                    editSettingsByHWND(window_id, data)
+                                    settingsm.editSettingsByHWND(window_id, data)
                                     self.bot.send_message("admin",
                                                           f"<b>Перс был не в бою, поставил на рандом спот</b>",
                                                           charid=window_id)
@@ -445,29 +454,14 @@ class Scenary:
                     data = self.settings[windowname]
                     log(f"По графику пытаюсь закупиться, продаться, сложиться", window_id)
                     if data["State"] not in ["death", "stashing", "shopping"]:
-                        energo = checkEnergoMode({window_id: data})
-                        if energo:
-                            before = True
-                            energo_mode({window_id: data}, "off")
-
                         if data["State"] == "combat":
                             tp = teleportToTown({window_id: data}, True)
                             if tp:
-                                time.sleep(1.2)
-
-                                zakup1 = navigateToNPC({window_id: data}, "shop")
+                                zakup1 = navigateToNPC({window_id: data}, "shop|stash|buyer")
                                 if zakup1:
-                                    log("обработал магаз успешно", window_id)
+                                    log("шото наделал, хз вроде закупился", window_id)
 
-                                zakup2 = navigateToNPC({window_id: data}, "stash")
-                                if zakup2:
-                                    log("обработал стеш успешно", window_id)
-
-                                zakup3 = navigateToNPC({window_id: data}, "buyer")
-                                if zakup3:
-                                    log("обработал скупщика успешно", window_id)
-
-                                time.sleep(1.2)
+                                time.sleep(0.1)
                                 teleportToRandomSpot({window_id: data}, SPOT_OT, SPOT_DO)
                                 self.shop_stash_in_progress = False
                                 self.shopStashManager.remove_from_queue(window_id)
@@ -476,22 +470,18 @@ class Scenary:
                             else:
                                 log("чет пошло не так, чини =(", window_id)
 
-                        if before:
-                            time.sleep(1)
-                            energo_mode({window_id: data}, "on")
-                            self.shop_stash_in_progress = False
-                            self.shopStashManager.remove_from_queue(window_id)
-
                     if self.pvpManager.get_queue() or self.spotManager.get_queue() or self.deathManager.get_queue() or self.hpBankManager.get_queue():
                         break
 
     def run(self):
         log("started")
         while True:
-            self.process_pvp()
+            if cfg.misc.PVP_DODGER:
+                self.process_pvp()
             self.process_spots()
             self.process_death()
-            self.process_hp_banks()
+            if cfg.misc.BANKA_CHECKER:
+                self.process_hp_banks()
             self.process_pereves()
             self.process_farmbacker()
             self.process_mail()

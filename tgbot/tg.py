@@ -8,7 +8,23 @@ import pyautogui
 from io import BytesIO
 from clogger import log
 from datetime import datetime
-from methods.base_methods import loadSettingsByHWND, loadSettings, load_config
+from methods.base_methods import load_config
+from methods.base_methods import SettingsManager
+
+settingsm = SettingsManager()
+_settings_cache = None
+_settings_timestamp = 0
+_settings_lock = threading.Lock()
+
+def get_cached_settings():
+    global _settings_cache, _settings_timestamp
+    with _settings_lock:
+        now = time.time()
+        if now - _settings_timestamp > 0.05 or _settings_cache is None: #todo сделать норм одни настройки для всех, багует если дрочить быстро
+            _settings_cache = settingsm.loadSettings()
+            _settings_timestamp = now
+            #print(_settings_cache)
+        return _settings_cache
 
 cfg = load_config('config.ini')
 TG_TOKEN = cfg.telegram.TG_TOKEN
@@ -32,7 +48,7 @@ class TgBotus:
         self._polling_started = False
         self.current_scenario_name = None
         self.scenaries = []
-        self.settings = loadSettings()
+        self.settings = get_cached_settings()
 
         #todo fix govnocode
         @self.bot.callback_query_handler(func=lambda call: call.data == "l2m:back")
@@ -49,7 +65,7 @@ class TgBotus:
             try:
                 if call.message.text:
                     self.bot.edit_message_text(
-                        f"😎 Всего аккаунтов храним: {len(loadSettings())}\n🕹 Выбирай нужную кнопочку снизу",
+                        f"😎 Всего аккаунтов храним: {len(get_cached_settings())}\n🕹 Выбирай нужную кнопочку снизу",
                         chat_id=call.message.chat.id,
                         message_id=call.message.message_id,
                         reply_markup=markup
@@ -57,13 +73,13 @@ class TgBotus:
                 else:
                     self.bot.send_message(
                         call.message.chat.id,
-                        f"😎 Всего аккаунтов храним: {len(loadSettings())}\n🕹 Выбирай нужную кнопочку снизу",
+                        f"😎 Всего аккаунтов храним: {len(get_cached_settings())}\n🕹 Выбирай нужную кнопочку снизу",
                         reply_markup=markup
                     )
             except telebot.apihelper.ApiTelegramException as e:
                 self.bot.send_message(
                     call.message.chat.id,
-                    f"😎 Всего аккаунтов храним: {len(loadSettings())}\n🕹 Выбирай нужную кнопочку снизу",
+                    f"😎 Всего аккаунтов храним: {len(get_cached_settings())}\n🕹 Выбирай нужную кнопочку снизу",
                     reply_markup=markup
                 )
 
@@ -191,10 +207,10 @@ class TgBotus:
             chat_ids = TG_IDS
         else:
             chat_ids = [chat_id]
-        
+
         for chat_id in chat_ids:
             if self._is_admin(chat_id):
-                settings = loadSettingsByHWND(charid)
+                settings = settingsm.loadSettingsByHWND(charid)
                 nickname = f"<code>{settings.get('Nickname')}</code>" if settings and charid else ""
                 final_text = f"{nickname}\n{text}" if nickname else text
                 self.bot.send_message(chat_id, final_text, reply_markup=reply_markup, parse_mode='HTML')
@@ -215,7 +231,7 @@ class TgBotus:
             [("⚰️ Закрыть все окна", "l2m:killer")],
         ]
         markup = self.create_inline_keyboard(buttons)
-        self.send_message(chat_id, f"😎 Всего аккаунтов храним: {len(loadSettings())}\n🕹 Выбирай нужную кнопочку снизу", reply_markup=markup)
+        self.send_message(chat_id, f"😎 Всего аккаунтов храним: {len(get_cached_settings())}\n🕹 Выбирай нужную кнопочку снизу", reply_markup=markup)
 
     def show_nicknames(self, chat_id):
         buttons = []
@@ -253,7 +269,7 @@ class TgBotus:
         self.send_message(chat_id, msg, reply_markup=self.back())
 
     def send_char_info(self, chat_id):
-        settings = loadSettings()
+        settings = get_cached_settings()
         if not settings:
             self.send_message(chat_id, "❌ Нет информации о персонажах либо настры пустые")
             return

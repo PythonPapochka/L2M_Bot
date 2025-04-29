@@ -367,30 +367,28 @@ def teleportToTown(windowInfo, energo):
         x, y = xy
         gui_xy, gui_rgb = parseCBT("zalupka_gui")
         start_time = time.time()
-        timeout = 10
-
+        timeout = 15
+        click_mouse(windowInfo, x, y)
         while time.time() - start_time < timeout:
-            if check_pixel(windowInfo, gui_xy, gui_rgb, 0.5):
-                break
+            if check_pixel(windowInfo, gui_xy, gui_rgb, 1):
+                log("брикаю залупу, бабах наверн")
             else:
                 log("еще тпаюсь", windowid)
 
             if check_pixel(windowInfo, xy, rgb, 0.5):
                 click_mouse(windowInfo, x, y)
-            else:
-                break
 
             time.sleep(0.05)
 
-        if check_pixel(windowInfo, gui_xy, gui_rgb, 0.5):
-            log("тпнулся", windowid)
-            time.sleep(2)
-            return True
+            if check_pixel(windowInfo, gui_xy, gui_rgb, 0.5):
+                log("тпнулся", windowid)
+                return True
 
     return False
 
 
 def teleportToRandomSpot(windowInfo, from_=1, to_=4):
+    time.sleep(2)
     windowid = next(iter(windowInfo))
     random_spot = random.randint(from_, to_)
     cbt_choices = [
@@ -415,7 +413,7 @@ def teleportToRandomSpot(windowInfo, from_=1, to_=4):
             return False
         time.sleep(0.1)
 
-    time.sleep(3.5)
+    time.sleep(2)
     xy, rgb = parseCBT("zalupka_gui")
     teleported = check_pixel(windowInfo, xy, rgb, 10)
     if teleported:
@@ -424,7 +422,7 @@ def teleportToRandomSpot(windowInfo, from_=1, to_=4):
         x, y = xy
         result = click_mouse(windowInfo, x, y)
         if result:
-            time.sleep(0.5)
+            time.sleep(0.2)
             energo_mode(windowInfo, "on")
             time.sleep(0.05)
             return True
@@ -481,10 +479,14 @@ def buyLootAfterRIP(windowInfo):
                             x, y = xy
                             click = click_mouse(windowInfo, x, y)
                             time.sleep(4)
+                            lvlup = checkLvlUp(windowInfo)
+                            if lvlup:
+                                log(f"сломался лвл ап чек", windowid)
                             xy, rgb = parseCBT("respawn_exit_gui_button")
                             x, y = xy
                             result = click_mouse(windowInfo, x, y)
                             log(f"Успешно выкупил {len(value)} шт опыта!", windowid)
+                            time.sleep(1)
                             lvlup = checkLvlUp(windowInfo)
                             if lvlup:
                                 log(f"сломался лвл ап чек", windowid)
@@ -506,12 +508,11 @@ def checkRIP(windowInfo):
 def checkLvlUp(windowInfo):
     windowid = next(iter(windowInfo))
     xy, rgb = parseCBT("lvl_up_black")
-    teleported = check_pixel(windowInfo, xy, rgb, 2)
+    teleported = check_pixel(windowInfo, xy, rgb, 3)
     if teleported:
         xy, rgb = parseCBT("lvl_up_close")
         x, y = xy
         click_mouse(windowInfo, x, y)
-        time.sleep(1)
         return True
     else:
         #log(f"??? {teleported}", windowid)
@@ -524,7 +525,7 @@ def checkEnergoMode(windowInfo):
 
     for cbt in cbts:
         xy, rgb = parseCBT(cbt)
-        if not check_pixel(windowInfo, xy, rgb):
+        if not check_pixel(windowInfo, xy, rgb, 0.5):
             return False
 
     log(f"Находимся в энергорежиме", windowid)
@@ -534,11 +535,6 @@ def checkEnergoMode(windowInfo):
 def navigateToNPC(windowInfo, NPC):
     windowid = next(iter(windowInfo))
     NPC_list = NPC.split("|") if "|" in NPC else [NPC]
-
-    for npc in NPC_list:
-        if npc not in NPCS:
-            log(f"{npc} не существует", windowid)
-            return False
 
     energo = checkEnergoMode(windowInfo)
     if energo:
@@ -572,21 +568,22 @@ def navigateToNPC(windowInfo, NPC):
         if current_npc in NPC_CHECK_BUTTONS:
             xy, rgb = parseCBT(NPC_CHECK_BUTTONS[current_npc])
             attempts = 0
-            while not check_pixel(windowInfo, xy, rgb, 2):
-                time.sleep(0.02)
+            while not check_pixel(windowInfo, xy, rgb, 1):
+                time.sleep(0.005)
                 attempts += 1
-                if attempts >= 1000:
+                if attempts >= 200:
                     return False
 
             def click_button(button_name):
                 if button_name in ["npc_shop_button_1", "npc_stash_button_1", "npc_buyer_button_1"]:
-                    time.sleep(0.15)
+                    time.sleep(0.1)
+
                 xy, rgb = parseCBT(button_name)
                 x, y = xy
-                result = check_pixel(windowInfo, xy, rgb, 1)
+                result = check_pixel(windowInfo, xy, rgb, 3)
                 if result:
-                    time.sleep(0.1)
-                    return click_mouse(windowInfo, x, y)
+                    click_mouse(windowInfo, x, y)
+                    return True
                 elif not result and button_name in ["npc_shop_button_2", "npc_stash_button_2", "npc_buyer_button_2"]:
                     return True
                 return False
@@ -603,51 +600,47 @@ def navigateToNPC(windowInfo, NPC):
                 if waitAndClick(["npc_shop_button_1", "npc_shop_button_2", "npc_shop_button_3"]):
                     result = click_button("npc_global_quit_button")
                     if result:
-                        time.sleep(0.05)
+                        time.sleep(0.01)
                         continue
                 else:
                     result = click_button("npc_global_quit_button")
                     if not result:
-                        time.sleep(0.05)
+                        time.sleep(0.01)
                         return False
 
             if current_npc == "stash":
                 if waitAndClick(["npc_stash_button_1", "npc_stash_button_2"]):
                     result = click_button("npc_global_quit_button")
                     if result:
-                        time.sleep(0.05)
+                        time.sleep(0.01)
                         continue
                 else:
                     result = click_button("npc_global_quit_button")
                     if not result:
-                        time.sleep(0.05)
+                        time.sleep(0.01)
                         return False
 
             elif current_npc == "buyer":
                 if waitAndClick(["npc_buyer_button_1", "npc_buyer_button_2", "npc_buyer_button_3"]):
                     result = click_button("npc_global_quit_button")
                     if result:
-                        time.sleep(0.05)
+                        time.sleep(0.01)
                         continue
                 else:
                     result = click_button("npc_global_quit_button")
                     if not result:
-                        time.sleep(0.05)
+                        time.sleep(0.01)
                         return False
 
     return True
 
-def checkINtown(windowInfo, timeout=20):
+def checkINtown(windowInfo, timeout=10):
     windowid = next(iter(windowInfo))
     start_time = time.time()
 
-    lvlup = checkLvlUp(windowInfo)
-    if lvlup:
-        log(f"сломался лвл ап чек", windowid)
-
     while time.time() - start_time < timeout:
         xy, rgb = parseCBT("white_cube_in_minimap")
-        result = check_pixel(windowInfo, xy, rgb, 2)
+        result = check_pixel(windowInfo, xy, rgb, 1)
         if result:
             xy, rgb = parseCBT("npc_list_in_town")
             x, y = xy
@@ -659,13 +652,15 @@ def checkINtown(windowInfo, timeout=20):
                     log("Нахожусь в городе, список нпс открыт", windowid)
                     return True, allNPC
         else:
-            if checkEnergoMode(windowInfo):
+            if 1==2:
+            #if checkEnergoMode(windowInfo): #kostyl
                 log("Не нашел карту, мы в энергомоде", windowid)
                 return False, None
             else:
                 allNPC = getNPCposition(windowInfo)
                 if allNPC:
                     log("Список нпс уже открыт, мы в городе", windowid)
+
                     return True, allNPC
 
                 elif checkRIP(windowInfo):
@@ -678,33 +673,31 @@ def checkINtown(windowInfo, timeout=20):
                 else:
                     log("Все условия не пройдены, жесть", windowid)
 
-        time.sleep(0.05)
-
     log("Не удалось определить, в городе ли мы =(", windowid)
     return False, None
 
 def getNPCposition(windowInfo):
     npc_mapping = {}
-    time.sleep(2)
-    for j in range(3, 5):
-        xy, rgb = parseCBT(f"npc_list_{j}")
-        result = check_pixel(windowInfo, xy, rgb, 0.2)
 
+    for j in [4, 3]:
+        xy, rgb = parseCBT(f"npc_list_{j}")
+        result = check_pixel(windowInfo, xy, rgb, 0.5)
         if result:
+            if j == 4:
+                npc_mapping = {
+                    "stash": f"npc_list_{j}",
+                    "shop": "npc_list_2",
+                    "buyer": "npc_list_6"
+                }
             if j == 3:
                 npc_mapping = {
                     "stash": f"npc_list_{j}",
                     "shop": "npc_list_1",
                     "buyer": "npc_list_5"
                 }
-            elif j == 4:
-                npc_mapping = {
-                    "stash": f"npc_list_{j}",
-                    "shop": "npc_list_2",
-                    "buyer": "npc_list_6"
-                }
             break
     if npc_mapping:
+        log(json.dumps(npc_mapping, indent=4))
         return json.dumps(npc_mapping, indent=4)
     else:
         return None
@@ -720,9 +713,10 @@ def respawn(windowInfo): #todo refactor govnocode
 
     for _ in range(max_attempts):
         for cbt in cbts:
+            print(cbt)
             xy, rgb = parseCBT(cbt)
-            if check_pixel(windowInfo, xy, rgb, 0.04):
-                #print("кнопка реса есть")
+            if check_pixel(windowInfo, xy, rgb, 0.5):
+                print("кнопка реса есть")
                 result = True
                 break
         if result:
@@ -733,12 +727,12 @@ def respawn(windowInfo): #todo refactor govnocode
         x, y = xy
         result = click_mouse(windowInfo, x, y)
         if result:
+            time.sleep(2)
             lvlup = checkLvlUp(windowInfo)
             if lvlup:
                 log(f"сломался лвл ап чек", windowid)
 
             xy, rgb = parseCBT("zalupka_gui")
-            time.sleep(1)
             teleported = check_pixel(windowInfo, xy, rgb, 5)
             if teleported:
                 log("Успешно восстал из мертвых", windowid)
@@ -812,8 +806,7 @@ def energo_mode(windowInfo, state):
 
         elif state == "on":
             click_mouse(windowInfo, button_x, button_y)
-            time.sleep(0.2)
-
+            time.sleep(0.4)
             width = window["Width"]
             height = window["Height"]
             center_x = width // 2

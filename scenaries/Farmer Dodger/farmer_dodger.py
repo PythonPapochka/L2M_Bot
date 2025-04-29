@@ -210,10 +210,8 @@ class Scenary:
                         log(f"Тпнулся в город успешно", window_id)
                         data["State"] = "shopping"
                         settingsm.editSettingsByHWND(window_id, data)
-                        time.sleep(0.3)
                         log(f"Пробую пойти к магазу", window_id)
                         result = navigateToNPC({window_id: data}, "shop")
-                        time.sleep(0.2)
                         log(f"Результат закупочки - {result}", window_id)
                         log(f"Пробую тп на рандом спот", window_id)
                         result2 = teleportToRandomSpot({window_id: data}, SPOT_OT, SPOT_DO)
@@ -297,8 +295,13 @@ class Scenary:
                         self.farm_backer_in_progress = False
                         break
                     else:
-                        print(autohunt)
-                        print("monkey")
+                        rip = checkRIP({window_id: data})
+                        if rip:
+                            self.farmManager.remove_from_queue(window_id)
+                            self.farm_backer_in_progress = False
+                        else:
+                            print(autohunt)
+                            print("monkey")
 
                     energo = checkEnergoMode({window_id: data})
                     if energo:
@@ -459,6 +462,7 @@ class Scenary:
                         if data["State"] == "combat":
                             tp = teleportToTown({window_id: data}, True)
                             if tp:
+                                log(f"tped {tp}", window_id)
                                 zakup1 = navigateToNPC({window_id: data}, "shop|stash|buyer")
                                 if zakup1:
                                     log("шото наделал, хз вроде закупился", window_id)

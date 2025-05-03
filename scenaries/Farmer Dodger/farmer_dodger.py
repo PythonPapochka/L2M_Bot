@@ -1,6 +1,8 @@
 import threading
 import time
+import random
 import os
+
 from datetime import datetime, timedelta
 from clogger import log
 
@@ -63,44 +65,57 @@ class Scenary:
 
     def process_pvp(self):
         queue = self.pvpManager.get_queue()
-        #print(f"pvp {que
-        # ue}")
         #log(self.settings)
         if queue:
             while queue:
                 window_id = queue.popleft()
                 if str(window_id) in self.settings:
+                    log(f"Начал обрабатывать очередь пвп", window_id)
                     windowname = str(window_id)
                     data = self.settings[windowname]
                     log(f"Сдетектил пвп, возможно нам пизда {window_id}", window_id)
                     result = teleportToTown({window_id: data}, True)
+                    log(f"Попытка тп в город: {result}", window_id)
                     if result:
                         log(f"ez dodge sasai lalka {window_id}", window_id)
-                        self.bot.send_message("admin", f"<b>Доджнул пвп, сплю {SLEEP_AFTER_PVP_DODGE} минут</b>", charid=window_id)
+                        min_sleep, max_sleep = map(int, SLEEP_AFTER_PVP_DODGE.split("-"))
+                        sleep_minutes = random.randint(min_sleep, max_sleep)
+                        self.bot.send_message("admin", f"<b>Доджнул пвп, сплю {sleep_minutes} мин.</b>", charid=window_id)
                         time.sleep(0.5)
                         energo_mode({window_id: data}, "on")
-                        log(f"sleep {SLEEP_AFTER_PVP_DODGE}", window_id)
-                        nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_PVP_DODGE)
+                        log(f"Поставил энергомод вкл", window_id)
+                        log(f"sleep {sleep_minutes}", window_id)
+                        nexttime = datetime.now() + timedelta(minutes=sleep_minutes)
                         data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
                         data["State"] = "afk"
+                        log(f"Поставил афк стейт на время сна", window_id)
                         settingsm.editSettingsByHWND(window_id, data)
                         self.pvpManager.remove_from_queue(window_id)
                     else:
                         log(f"Ошибка при телепорте, возможно мы уже дохлые: {result}", window_id)
                         result = respawn({window_id: data})
+                        log(f"Попробовал реснуться, результ: {result}", window_id)
                         if result:
-                            nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_PVP_DODGE)
+                            min_sleep, max_sleep = map(int, SLEEP_AFTER_PVP_DODGE.split("-"))
+                            sleep_minutes = random.randint(min_sleep, max_sleep)
+                            nexttime = datetime.now() + timedelta(minutes=sleep_minutes)
                             data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
                             data["State"] = "afk"
                             settingsm.editSettingsByHWND(window_id, data)
+                            log(f"Реснулся, установил афк стейт, не буду выкупать шмотки", window_id)
                             energo_mode({window_id: data}, "on")
                             self.bot.send_message("admin", f"<b>Шото произошло, сначала сдохли но не сдохли\nНо потом точно сдохли и реснулись\n\n{result}</b>", charid=window_id)
                             self.pvpManager.remove_from_queue(window_id)
                         else:
-                            log(f"Были не дохлые, попробовал возродиться тщетно {result}, чета случилось не обработанное", window_id)
+                            log(f"Были не дохлые, попробовал возродиться тщетно {result}, чета случилось не обработанное, попробую поставить ему афк стейт", window_id)
                             self.bot.send_message("admin", f"<b>Ошибка при телепорте от пвп, чет случилось очень злое и не обработанное {result}</b>", charid=window_id)
+                            min_sleep, max_sleep = map(int, SLEEP_AFTER_PVP_DODGE.split("-"))
+                            sleep_minutes = random.randint(min_sleep, max_sleep)
+                            nexttime = datetime.now() + timedelta(minutes=sleep_minutes)
+                            data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
+                            data["State"] = "afk"
+                            settingsm.editSettingsByHWND(window_id, data)
                             self.pvpManager.remove_from_queue(window_id)
-                            
 
     def process_spots(self):
         if not self.spot_in_progress and not self.pvpManager.get_queue() and not self.deathManager.get_queue():

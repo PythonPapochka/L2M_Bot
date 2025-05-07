@@ -145,7 +145,7 @@ def check_pixel(window_info, xy, rgb, timeout=0.2):
                     pixel_color = screenshot[y, x][:3][::-1]  # BGR to RGB
                     diff = np.abs(pixel_color - rgb)
                     last_diffs.append(diff)
-                    if np.all(diff <= 5):
+                    if np.all(diff <= 2):
                         return True
 
             time.sleep(wait_time)

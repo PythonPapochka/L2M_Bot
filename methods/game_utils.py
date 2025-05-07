@@ -358,14 +358,18 @@ def checkAutoHunt(windowInfo):
 def teleportToTown(windowInfo, energo):
     windowid = next(iter(windowInfo))
     log("Начало тп в город", windowid)
+    emode = False
     if not energo:
         if checkEnergoMode(windowInfo):
             log("Энергомод включен, продолжаю тпаться", windowid)
+            emode = True
             xy, rgb = parseCBT("home_scroll_button_energomode")
         else:
             log("Энергомод выключен, продолжаю тпаться", windowid)
+            emode = False
             xy, rgb = parseCBT("home_scroll_button_no_energomode")
     else:
+        emode = True
         xy, rgb = parseCBT("home_scroll_button_energomode")
 
     log("Ищу свиток тп", windowid)
@@ -380,13 +384,15 @@ def teleportToTown(windowInfo, energo):
         founds = 0
         while time.time() - start_time < timeout:
             log(f"Тпаюсь", windowid)
-            if check_pixel(windowInfo, gui_xy, gui_rgb, 1):
-                log("Нашел залупку_гуи, добавил к циклу")
+            if not checkEnergoMode(windowInfo) and emode:
+                log("Не в энерго")
                 founds += 1
-                if founds >= 10:
-                    break
+                if founds >= 6:
+                    log("брикед, не в энерго 100%", windowid)
+                    time.sleep(5)
             else:
-                log("залупки гуи нет, не брикаю", windowid)
+                log("залупки гуи нет, не брикаю, буду спать 10 сек", windowid)
+                time.sleep(10)
 
             if check_pixel(windowInfo, xy, rgb, 0.5):
                 log(f"Кликнул по свитку", windowid)
@@ -395,8 +401,8 @@ def teleportToTown(windowInfo, energo):
             time.sleep(0.05)
 
             if check_pixel(windowInfo, gui_xy, gui_rgb, 0.5):
-                log("Залупка гуи 100% есть, вернусь через 2 секунды", windowid)
-                time.sleep(2)
+                log("Залупка гуи 100% есть, вернусь через 6 секунд", windowid)
+                time.sleep(6)
                 return True
 
     log(f"Фолс при тп в город, хз", windowid)
@@ -454,56 +460,72 @@ def teleportToRandomSpot(windowInfo, from_=1, to_=4):
 
 def buyLootAfterRIP(windowInfo):
     windowid = next(iter(windowInfo))
-
+    log(f"Начало выполнения закупки опыта после рипа", windowid)
     if not checkEnergoMode(windowInfo):
+        log(f"Не нахожусь в энерго при закупке опыта", windowid)
         xy, rgb = parseCBT("krest_after_respawn")
-        if check_pixel(windowInfo, xy, rgb, 1):
+        log(f"Начинаю искать krest_after_respawn", windowid)
+        if check_pixel(windowInfo, xy, rgb, 3):
+            log(f"Нашел krest_after_respawn, кликаю", windowid)
             x, y = xy
             result = click_mouse(windowInfo, x, y)
-
+            log(f"Начинаю ждать respawn_icon_in_gui", windowid)
             xy, rgb = parseCBT("respawn_icon_in_gui")
             result = check_pixel(windowInfo, xy, rgb, 2)
             if result:
+                log(f"Охуенно, нашел респавн иконку, жду монетку", windowid)
                 xy, rgb = parseCBT("monetka_respawn")
                 while True:
+                    log(f"Начал чекать монетку гуи", windowid)
                     result = check_pixel(windowInfo, xy, rgb, 3)
+                    log(f"Результат монетки - {result}", windowid)
                     if not result:
                         x, y = xy
                         click = click_mouse(windowInfo, x, y)
                         time.sleep(0.05)
                     if result:
+                        log(f"Монетка стоит, брикаю", windowid)
                         break
 
                 time.sleep(0.3)
                 value = []
-                for x in range(1, 5):
+                log(f"Начинаю чекать кол-во экспы на выкуп", windowid)
+                for h in range(1, 5):
                     time.sleep(0.3)
-                    cbt = f"respawn_monetka_exp_{x}"
+                    cbt = f"respawn_monetka_exp_{h}"
                     xy, rgb = parseCBT(cbt)
                     result = check_pixel(windowInfo, xy, rgb)
+                    log(f"Пробую выкупить respawn_monetka_exp_{h}", windowid)
                     if result:
                         value.append(cbt)
                         x, y = xy
                         click_mouse(windowInfo, x, y)
-                    if x == 2 and not result:
+                        log(f"Кликнул по respawn_monetka_exp_{h}", windowid)
+                    if h == 2 and not result:
+                        log(f"Видимо была только один опыт на выкуп respawn_monetka_exp_{h} не нашел и результ фалс", windowid)
                         break
 
+                log(f"Валью: {value}", windowid)
                 if value:
+                    log(f"Суммарно выкупил: {value}", windowid)
                     xy, rgb = parseCBT("respawn_buy_gui_button")
                     result = check_pixel(windowInfo, xy, rgb, 2)
+                    log(f"Проверка респавн_бай_гуи_бутон: {result}", windowid)
                     if result:
                         x, y = xy
                         click = click_mouse(windowInfo, x, y)
+                        log(f"Кликнул по respawn_buy_gui_button", windowid)
                         time.sleep(0.05)
                         xy, rgb = parseCBT("respawn_accept_buy_gui_button")
                         result = check_pixel(windowInfo, xy, rgb, 3)
+                        log(f"Проверка respawn_accept_buy_gui_button: {result}", windowid)
                         if result:
                             x, y = xy
                             click = click_mouse(windowInfo, x, y)
                             time.sleep(4)
                             lvlup = checkLvlUp(windowInfo)
                             if lvlup:
-                                log(f"сломался лвл ап чек", windowid)
+                                log(f"Вероятно был лвл ап?", windowid)
                             xy, rgb = parseCBT("respawn_exit_gui_button")
                             x, y = xy
                             result = click_mouse(windowInfo, x, y)
@@ -513,6 +535,13 @@ def buyLootAfterRIP(windowInfo):
                             if lvlup:
                                 log(f"сломался лвл ап чек", windowid)
                             return True
+                else:
+                    xy, rgb = parseCBT("respawn_exit_gui_button")
+                    x, y = xy
+                    result = click_mouse(windowInfo, x, y)
+                    log("Шось жоско поломалось да и пох", windowid)
+                    return False
+
             else:
                 log("Не нужно выкупать предметы", windowid)
                 return True

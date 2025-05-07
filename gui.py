@@ -11,7 +11,12 @@ from tgbot.tg import TgBotus
 import json
 import time
 
+POSITION_FILE = "p.json"
 settingsm = SettingsManager()
+
+# для одного лоха с ру символами.....
+# os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = r"C:\Users\База1\AppData\Local\Programs\Python\Python311\Lib\site-packages\PyQt5\Qt5\plugins\platforms"
+
 
 class gui(QtWidgets.QWidget):
     def __init__(self):
@@ -23,6 +28,7 @@ class gui(QtWidgets.QWidget):
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 
         self.old_pos = None
+        self.load_window()
         self.current_process = None
         self.is_paused = False
         self.selected_button = None
@@ -258,6 +264,18 @@ class gui(QtWidgets.QWidget):
         self.timer_label.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Fixed)
         container_layout.addWidget(self.timer_label, alignment=QtCore.Qt.AlignCenter)
 
+    def save_window(self):
+        pos = self.pos()
+        with open(POSITION_FILE, "w") as f:
+            json.dump({"x": pos.x(), "y": pos.y()}, f)
+
+    def load_window(self):
+        try:
+            with open(POSITION_FILE, "r") as f:
+                data = json.load(f)
+                self.move(data["x"], data["y"])
+        except Exception:
+            pass
 
     def update_timer(self):
         if self.start_time:
@@ -498,10 +516,10 @@ class gui(QtWidgets.QWidget):
         self.stop_button.setEnabled(running)
 
     def close_app(self):
+        self.save_window()
         self.stop_scenary()
         self.close()
 
-    #хвала роме харону
     #@BotLineage2M
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:

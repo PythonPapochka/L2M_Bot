@@ -101,8 +101,11 @@ class Scenary:
                             nexttime = datetime.now() + timedelta(minutes=sleep_minutes)
                             data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
                             data["State"] = "afk"
+                            log(f"Реснулся, пробую поставить афк стейт и инхом на {sleep_minutes} мин.", window_id)
                             settingsm.editSettingsByHWND(window_id, data)
                             log(f"Реснулся, установил афк стейт, не буду выкупать шмотки", window_id)
+                            state = settingsm.loadSettingsByHWND(window_id)
+                            log(state, window_id)
                             energo_mode({window_id: data}, "on")
                             self.bot.send_message("admin", f"<b>Шото произошло, сначала сдохли но не сдохли\nНо потом точно сдохли и реснулись\n\n{result}</b>", charid=window_id)
                             self.pvpManager.remove_from_queue(window_id)
@@ -200,10 +203,17 @@ class Scenary:
                         self.hpBankManager.remove_from_queue(window_id)
                         break
 
-                    if data["State"] != "combat":
-                        log(f"Ложное срабатывание банки, скорее всего стоим в стане", window_id)
+                    if data["State"] not in ["combat", "afk"]:
+                        log(f"Ложное срабатывание банки, скорее всего стоим в стане {data['State']}", window_id)
                         self.banka_in_progress = False
                         self.hpBankManager.remove_from_queue(window_id)
+                        if data["State"] == "death":
+                            log(f"Вероятно багнулся, был в {data['State']} - переставил на афк, верну через пару минут на спот", window_id)
+                            data["State"] = "afk"
+                            nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_RIP)
+                            data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
+                            settingsm.editSettingsByHWND(window_id, data)
+
                         break
 
                     log(f"Пробую тпнуться в город, кончились баночки", window_id)
@@ -219,6 +229,7 @@ class Scenary:
                             settingsm.editSettingsByHWND(window_id, data)
                             self.hpBankManager.remove_from_queue(window_id)
                             self.banka_in_progress = False
+                            break
 
                     teleport = teleportToTown({window_id: data}, True)
                     if teleport:
@@ -242,7 +253,8 @@ class Scenary:
 
                         else:
                             log(f"Чет пошло не так, не закупился и не тпнулся, ставлю окну афк + нулл", window_id)
-                            data["InHome"] = "null"
+                            nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_RIP)
+                            data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
                             data["State"] = "afk"
                             settingsm.editSettingsByHWND(window_id, data)
                             self.hpBankManager.remove_from_queue(window_id)
@@ -251,7 +263,8 @@ class Scenary:
 
                     else:
                         log(f"teleport to buy banks - {teleport}", window_id)
-                        data["InHome"] = "null"
+                        nexttime = datetime.now() + timedelta(minutes=SLEEP_AFTER_RIP)
+                        data["InHome"] = nexttime.strftime('%Y-%m-%d %H:%M:%S')
                         data["State"] = "afk"
                         settingsm.editSettingsByHWND(window_id, data)
                         self.hpBankManager.remove_from_queue(window_id)

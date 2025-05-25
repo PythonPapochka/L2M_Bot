@@ -347,7 +347,7 @@ def claim_donate_shop(windowInfo):
 def checkAutoHunt(windowInfo):
     windowid = next(iter(windowInfo))
     xy, rgb = parseCBT("auto_combat_ON")
-    result = check_pixel(windowInfo, xy, rgb, 8)
+    result = check_pixel(windowInfo, xy, rgb, 12, 10, "4x4")
     if result:
         log("Автобой включен" ,windowid)
         return True
@@ -373,17 +373,20 @@ def teleportToTown(windowInfo, energo):
         xy, rgb = parseCBT("home_scroll_button_energomode")
 
     log("Ищу свиток тп", windowid)
-    if xy and rgb and check_pixel(windowInfo, xy, rgb, 0.5):
+    if xy and rgb and check_pixel(windowInfo, xy, rgb, 1.5, 8):
         x, y = xy
         log(f"Свиток тк найден, {xy}", windowid)
         gui_xy, gui_rgb = parseCBT("zalupka_gui")
         start_time = time.time()
-        timeout = 30
+        timeout = 60
         click_mouse(windowInfo, x, y)
         log(f"Начал ждать телепорта", windowid)
         founds = 0
         while time.time() - start_time < timeout:
             log(f"Тпаюсь", windowid)
+            lvlup = checkLvlUp(windowInfo)
+            if lvlup:
+                log(f"Вероятно был лвл ап?", windowid)
             if not checkEnergoMode(windowInfo) and emode:
                 log("Не в энерго")
                 founds += 1
@@ -401,8 +404,8 @@ def teleportToTown(windowInfo, energo):
             time.sleep(0.05)
 
             if check_pixel(windowInfo, gui_xy, gui_rgb, 0.5):
-                log("Залупка гуи 100% есть, вернусь через 6 секунд", windowid)
-                time.sleep(6)
+                log("Залупка гуи 100% есть, вернусь через 2 сек", windowid)
+                time.sleep(2)
                 return True
 
     log(f"Фолс при тп в город, хз", windowid)
@@ -754,7 +757,8 @@ def getNPCposition(windowInfo):
     for j in [4, 3]:
         xy, rgb = parseCBT(f"npc_list_{j}")
         log(f"Пробую чекнуть npc_list_{j} ({xy}, {rgb})", windowid)
-        result = check_pixel(windowInfo, xy, rgb, 0.5)
+        result = check_pixel(windowInfo, xy, rgb, 1.5, 2, "1x1")
+        log(f"npc_list_{j} ({xy}, {rgb}) | {result}", windowid)
         if result:
             log(f"Детектнул позиции, возможно бабах ноо {j}", windowid)
             if j == 4:
@@ -771,9 +775,10 @@ def getNPCposition(windowInfo):
                 }
             break
     if npc_mapping:
-        log(json.dumps(npc_mapping, indent=4))
+        log(json.dumps(npc_mapping, indent=4), windowid)
         return json.dumps(npc_mapping, indent=4)
     else:
+        log("getnpc false, и 3 и 4 не прошли", windowid)
         return None
 
 def respawn(windowInfo): #todo refactor govnocode
@@ -817,7 +822,7 @@ def respawn(windowInfo): #todo refactor govnocode
             xy, rgb = parseCBT("zalupka_gui")
             log(f"Начинаю ждать залупку_гуи в респавн функе", windowid)
             teleported = check_pixel(windowInfo, xy, rgb, 5)
-            if teleported:
+            if 1==1: #todo
                 log("Успешно восстал из мертвых (залупка гуи на месте)", windowid)
                 return True
             else:

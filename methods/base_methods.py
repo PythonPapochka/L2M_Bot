@@ -13,6 +13,7 @@ import ast
 import threading
 import copy
 from typing import Dict, Any
+from clogger import log
 
 class ConfigSection:
     def __init__(self, section_data):
@@ -120,10 +121,15 @@ def find_BP_2(window_info, t=5, step=3, distance=20):
 
     return [[f"{x_search}, {y}", "no"] for y in buttons]
 
-def check_pixel(window_info, xy, rgb, timeout=0.2):
-    wait_time = 0.01
+def check_pixel(window_info, xy, rgb, timeout=0.2, thr=2, wsize="2x2"):
+    wait_time = 0.05
     if rgb == "no":
         return True
+
+    try:
+        width, height = map(int, wsize.lower().split('x'))
+    except Exception:
+        width, height = 2, 2  # fallback esli babah
 
     window_id, window = next(iter(window_info.items()))
     left, top = window['Position']
@@ -136,20 +142,20 @@ def check_pixel(window_info, xy, rgb, timeout=0.2):
 
     with mss.mss() as sct:
         while time.time() - start_time < timeout:
-            monitor = {"left": adjusted_x, "top": adjusted_y, "width": 2, "height": 2}
+            monitor = {"left": adjusted_x, "top": adjusted_y, "width": width, "height": height}
             screenshot = np.array(sct.grab(monitor))
 
-            for y in range(2):
-                for x in range(2):
-
+            for y in range(height):
+                for x in range(width):
                     pixel_color = screenshot[y, x][:3][::-1]  # BGR to RGB
                     diff = np.abs(pixel_color - rgb)
                     last_diffs.append(diff)
-                    if np.all(diff <= 2):
+                    if np.all(diff <= thr):
                         return True
 
             time.sleep(wait_time)
     return False
+
 
 def move_mouse(windowInfo, x_offset, y_offset):
     inputs.auto_capture_devices(keyboard=True, mouse=True)
@@ -209,6 +215,7 @@ class SettingsManager:
             self._settings.clear()
             for hwnd, new_info in current_windows.items():
                 nickname = new_info.get("Nickname", str(hwnd))
+                print(f"init | {new_info} | {nickname}")
                 self._settings[nickname] = copy.deepcopy(new_info)
 
     def loadSettings(self) -> Dict[str, Any]:
@@ -220,6 +227,7 @@ class SettingsManager:
         with self._settings_lock:
             if hwnd_str in self._settings:
                 self._settings[hwnd_str].update(copy.deepcopy(new_settings))
+                print(f"изменил чет в настройках\nстало: {new_settings}")
                 return True
             return False
 

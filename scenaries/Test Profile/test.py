@@ -5,7 +5,7 @@ from clogger import log
 from methods.base_methods import SettingsManager
 
 from methods.game_utils import energo_mode, checkEnergoMode, \
-    claim_battle_pass, teleportToTown, teleportToRandomSpot, navigateToNPC
+    claim_battle_pass, teleportToTown, teleportToRandomSpot, navigateToNPC, getNPCposition
 
 from tgbot.tg import TgBotus
 
@@ -25,16 +25,11 @@ class Scenary:
             windowInfo = {nickname: data}
             windowdata = data["State"] #todo допилить чтоб не собирало бп у... у кого?
             if windowdata not in ["death", "stashing", "shopping", "claiming"]:
+                zakup1 = claim_battle_pass({nickname: data})
+                if zakup1:
+                    log("yes", nickname)
 
-                tp = teleportToTown({nickname: data}, True)
-                if tp:
-                    zakup1 = navigateToNPC({nickname: data}, "shop|stash|buyer")
-                    if zakup1:
-                        log("yes", nickname)
-
-                    time.sleep(0.1)
-                    teleportToRandomSpot({nickname: data}, 1, 1)
-
+                time.sleep(0.1)
         return
 
     def run(self):

@@ -86,7 +86,7 @@ def find_BP_1(window_info, t=5, step=5, distance=30):
 
     return [[f"{x}, {y_search}", "no"] for x in buttons]
 
-def find_BP_2(window_info, t=5, step=3, distance=20):
+def find_BP_2(window_info, t=8, step=3, distance=20):
     window_id, window = next(iter(window_info.items()))
     left, top = window["Position"]
     height = window["Height"]
@@ -150,6 +150,7 @@ def check_pixel(window_info, xy, rgb, timeout=0.2, thr=2, wsize="2x2"):
                     pixel_color = screenshot[y, x][:3][::-1]  # BGR to RGB
                     diff = np.abs(pixel_color - rgb)
                     last_diffs.append(diff)
+                    #print(diff, thr)
                     if np.all(diff <= thr):
                         return True
 
@@ -215,7 +216,7 @@ class SettingsManager:
             self._settings.clear()
             for hwnd, new_info in current_windows.items():
                 nickname = new_info.get("Nickname", str(hwnd))
-                print(f"init | {new_info} | {nickname}")
+               #print(f"init | {new_info} | {nickname}")
                 self._settings[nickname] = copy.deepcopy(new_info)
 
     def loadSettings(self) -> Dict[str, Any]:
@@ -227,7 +228,7 @@ class SettingsManager:
         with self._settings_lock:
             if hwnd_str in self._settings:
                 self._settings[hwnd_str].update(copy.deepcopy(new_settings))
-                print(f"изменил чет в настройках\nстало: {new_settings}")
+                #print(f"изменил чет в настройках\nстало: {new_settings}")
                 return True
             return False
 

@@ -46,43 +46,67 @@ def claim_achiv(windowInfo):
 
     return True
 
+
 def claim_mail(windowInfo):
     claimed = False
-    def wait_and_click(tag, timeout=5):
+
+    def wait_and_click(tag, timeout=5, thr=3):
         xy, rgb = parseCBT(tag)
-        if check_pixel(windowInfo, xy, rgb, timeout):
+        if check_pixel(windowInfo, xy, rgb, timeout, thr):
             x, y = xy
             click_mouse(windowInfo, x, y)
             return True
         return False
 
+    def check_clr(tag):
+        xy, rgb = parseCBT(tag)
+        return check_pixel(windowInfo, xy, rgb, 2)
+
     windowid = next(iter(windowInfo))
 
     if checkEnergoMode(windowInfo):
-        before = True
         energo_mode(windowInfo, "off")
 
     if not wait_and_click("main_menu_gui", 5):
         return False
 
-    if not wait_and_click("red_dot_mail", 3):
-        close = wait_and_click("npc_global_quit_button", 5)
+    if not wait_and_click("red_dot_mail_menu", 5, 10):
         return False
 
-    if not wait_and_click("claim_all_mail", 5):
-        close = wait_and_click("npc_global_quit_button", 5)
+    red_dot_ex = check_clr("red_dot_mail")
+    claim_ex = check_clr("claim_all_mail")
+
+    if red_dot_ex and claim_ex:
+        if not wait_and_click("claim_all_mail", 5):
+            wait_and_click("npc_global_quit_button", 5)
+            return False
+
+        start_time = time.time()
+        while time.time() - start_time < 120:
+            time.sleep(1)
+
+            red_dot_ex = check_clr("red_dot_mail")
+            cancel_ex = check_clr("cancel_button_mail")
+
+            if cancel_ex:
+                # это лимит опыта
+                wait_and_click("cancel_button_mail", 5)
+                wait_and_click("npc_global_quit_button", 5)
+                claimed = False
+                break
+
+            if not red_dot_ex:
+                # кругляш пропал = собрано
+                claimed = True
+                wait_and_click("npc_global_quit_button", 5)
+                break
+
+        time.sleep(2)
+        return claimed
+
+    else:
+        wait_and_click("npc_global_quit_button", 5)
         return False
-
-    time.sleep(5)
-    claimed = True
-    close = wait_and_click("npc_global_quit_button", 5)
-    time.sleep(2)
-
-    if not claimed:
-        return False
-
-    return True
-
 
 def claim_battle_pass(windowInfo):
 
@@ -131,8 +155,9 @@ def claim_battle_pass(windowInfo):
 
         x, y = xy
         click_mouse(windowInfo, x, y)
-
+        time.sleep(2)
         podtabs = find_BP_2(windowInfo)
+        #print(podtabs)
         for q, podtab in enumerate(podtabs, 1):
             if len(podtab) >= 2:
                 x, y = map(int, podtab[0].split(", "))
@@ -627,6 +652,9 @@ def navigateToNPC(windowInfo, NPC):
         log(f"Кликнул по нпс: {current_npc}", windowid)
 
         data = json_pos[current_npc]
+        if data == "no_data":
+            log(f"{current_npc} имеет no_data, пропускаем нах", windowid)
+            continue
         xy, rgb = parseCBT(data)
         x, y = xy
         click_mouse(windowInfo, x, y)
@@ -704,7 +732,7 @@ def navigateToNPC(windowInfo, NPC):
 
     return True
 
-def checkINtown(windowInfo, timeout=10):
+def checkINtown(windowInfo, timeout=20):
     windowid = next(iter(windowInfo))
     start_time = time.time()
     log(f"Начал проверять в городе ли я, таймаут: {timeout}", windowid)
@@ -753,19 +781,19 @@ def checkINtown(windowInfo, timeout=10):
 def getNPCposition(windowInfo):
     npc_mapping = {}
     windowid = next(iter(windowInfo))
-    log(f"Пробую получить позиции нпс ( вроде сломана навигация )", windowid)
-    for j in [4, 3]:
+    log(f"Пробую получить позиции нпс", windowid)
+    for j in [2, 3, 5, 6]:
         xy, rgb = parseCBT(f"npc_list_{j}")
-        log(f"Пробую чекнуть npc_list_{j} ({xy}, {rgb})", windowid)
-        result = check_pixel(windowInfo, xy, rgb, 1.5, 2, "1x1")
-        log(f"npc_list_{j} ({xy}, {rgb}) | {result}", windowid)
+        log(f"Пробую чекнуть npc_list_{j}", windowid)
+        result = check_pixel(windowInfo, xy, rgb, 1, 1, "1x1")
+        #print(result)
         if result:
-            log(f"Детектнул позиции, возможно бабах ноо {j}", windowid)
-            if j == 4:
+            log(f"Детектнул позиции, {j}", windowid)
+            if j == 2:
                 npc_mapping = {
                     "stash": f"npc_list_{j}",
-                    "shop": "npc_list_2",
-                    "buyer": "npc_list_6"
+                    "shop": "npc_list_1",
+                    "buyer": "npc_list_4"
                 }
             if j == 3:
                 npc_mapping = {
@@ -773,7 +801,21 @@ def getNPCposition(windowInfo):
                     "shop": "npc_list_1",
                     "buyer": "npc_list_5"
                 }
+            if j == 5:
+                npc_mapping = {
+                    "stash": f"npc_list_{j}",
+                    "shop": "npc_list_3",
+                    "buyer": "no_data"
+                }
+            if j == 6:
+                npc_mapping = {
+                    "stash": f"npc_list_{j}",
+                    "shop": "npc_list_4",
+                    "buyer": "no_data"
+                }
             break
+        else:
+            log(f"no {j}", windowid)
     if npc_mapping:
         log(json.dumps(npc_mapping, indent=4), windowid)
         return json.dumps(npc_mapping, indent=4)

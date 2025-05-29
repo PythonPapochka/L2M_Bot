@@ -6,6 +6,7 @@ env/
 .idea/
 .vscode/
 *.log
+config.ini
 data.json
 Test Profile
 test.py

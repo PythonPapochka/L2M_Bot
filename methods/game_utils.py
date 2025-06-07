@@ -1,12 +1,189 @@
 from interception import inputs
+from typing import Literal
 import time
 from clogger import log
-from constans import NPCS, NPC_CHECK_BUTTONS
+from constans import NPCS, NPC_CHECK_BUTTONS, DAILY
 from methods.base_methods import click_mouse, parseCBT, check_pixel, load_config, activate_window, find_BP_1, find_BP_2, \
-    move_mouse
+    move_mouse, find_daily_tabs
 import json
 import random
 import math
+import mss
+import numpy as np
+
+def find_daily(windowInfo, t=2, distance=35):
+    almaz_rgb = tuple(map(int, DAILY["almaz_donate"][0].split(', ')))
+    monetka_rgb = tuple(map(int, DAILY["monetka_donate"][0].split(', ')))
+    claim_rgb = tuple(map(int, DAILY["claim_daily"][0].split(', ')))
+
+    window_id, window = next(iter(windowInfo.items()))
+    left, top = window["Position"]
+    width = window["Width"]
+    height = window["Height"]
+
+    log("Начат поиск ежедневных бонусов", window_id)
+    log(f"Размеры окна: {width}x{height}, позиция: ({left}, {top})", window_id)
+
+    ranges = [
+        (DAILY["start_button_1"], DAILY["end_button_1"]),
+        (DAILY["start_button_2"], DAILY["end_button_2"]),
+    ]
+
+    def colorfinder(target_rgb, thre):
+        hits = []
+        with mss.mss() as sct:
+            monitor = {"left": left, "top": top, "width": width, "height": height}
+            screenshot = np.array(sct.grab(monitor))
+        img_rgb = screenshot[:, :, :3][:, :, ::-1]
+
+        for y_start, y_end in ranges:
+            for y in range(y_start, y_end + 1):
+                for x in range(width):
+                    pixel = img_rgb[y, x]
+                    if all(abs(int(pixel[i]) - target_rgb[i]) <= thre for i in range(3)):
+                        hits.append((x, y))
+
+        log(f"Найдено {len(hits)} точек цвета {target_rgb}", window_id)
+        hits.sort(key=lambda c: (c[1], c[0]))
+        grouped = []
+        if hits:
+            group = [hits[0]]
+            for coord in hits[1:]:
+                if abs(coord[0] - group[-1][0]) <= distance and abs(coord[1] - group[-1][1]) <= distance:
+                    group.append(coord)
+                else:
+                    avg_x = int(sum(c[0] for c in group) / len(group))
+                    avg_y = int(sum(c[1] for c in group) / len(group))
+                    grouped.append((avg_x, avg_y))
+                    group = [coord]
+
+            avg_x = int(sum(c[0] for c in group) / len(group))
+            avg_y = int(sum(c[1] for c in group) / len(group))
+            grouped.append((avg_x, avg_y))
+
+        log(f"Группировка цвета {target_rgb}: {grouped}", window_id)
+        return grouped, screenshot
+
+    def wait_and_click(tag, timeout=5):
+        xy, rgb = parseCBT(tag)
+        if check_pixel(windowInfo, xy, rgb, timeout):
+            x, y = xy
+            click_mouse(windowInfo, x, y)
+            log(f"Клик по тегу {tag} на координатах {xy}", window_id)
+            return True
+        log(f"Тег {tag} не найден за {timeout}с", window_id)
+        return False
+
+    def kuchkovator(points, radius=12):
+        if not points:
+            return []
+
+        grouped = []
+        points = sorted(points, key=lambda c: (c[1], c[0]))
+        group = [points[0]]
+
+        for pt in points[1:]:
+            if any((pt[0] - g[0])**2 + (pt[1] - g[1])**2 <= radius**2 for g in group):
+                group.append(pt)
+            else:
+                avg_x = int(sum(p[0] for p in group) / len(group))
+                avg_y = int(sum(p[1] for p in group) / len(group))
+                grouped.append((avg_x, avg_y))
+                group = [pt]
+
+        avg_x = int(sum(p[0] for p in group) / len(group))
+        avg_y = int(sum(p[1] for p in group) / len(group))
+        grouped.append((avg_x, avg_y))
+        log(f"Группировка (кучковка): {grouped}", window_id)
+        return grouped
+
+    while True:
+        log("Ищем кнопки с алмазами", window_id)
+        almaz_positions, screenshot = colorfinder(almaz_rgb, 1)
+        if len(almaz_positions) == 2:
+            log("Детектировано окно подтверждения алмаза — ничего не делаем", window_id)
+            return []
+
+        log("Ищем монетки", window_id)
+        monetka_positions, _ = colorfinder(monetka_rgb, t)
+        if not monetka_positions:
+            log("Монетки не найдены, ищем claim", window_id)
+            claim_positions, _ = colorfinder(claim_rgb, 10)
+            if claim_positions:
+                grouped_claims = kuchkovator(claim_positions, radius=12)
+                log(f"Нажатие по claim кнопкам: {grouped_claims}", window_id)
+                for (x_c, y_c) in grouped_claims:
+                    click_mouse(windowInfo, x_c, y_c)
+                    skip_vitlity(windowInfo)
+                return []
+            else:
+                log("Ни монеток, ни claim не найдено", window_id)
+                return []
+
+        for (x_m, y_m) in monetka_positions:
+            log(f"Клик по монетке: ({x_m}, {y_m})", window_id)
+            click_mouse(windowInfo, x_m, y_m)
+
+            if not wait_and_click("monetka_proverka"):
+                log("monetka_proverka не появилась", window_id)
+                continue
+
+            if not wait_and_click("confirm_buy_daily"):
+                log("confirm_buy_daily не появилась", window_id)
+                continue
+
+            timeout = 5
+            start_time = time.time()
+            claimed = False
+            while time.time() - start_time < timeout:
+                _, screenshot = colorfinder(almaz_rgb, t)
+                img_rgb = screenshot[:, :, :3][:, :, ::-1]
+
+                if 0 <= y_m < height and 0 <= x_m < width:
+                    pixel = img_rgb[y_m, x_m]
+                    if all(abs(int(pixel[i]) - claim_rgb[i]) <= t for i in range(3)):
+                        click_mouse(windowInfo, x_m, y_m)
+                        log(f"Клик по подтверждённому claim: ({x_m}, {y_m})", window_id)
+                        claimed = True
+                        break
+                time.sleep(0.1)
+
+            if not claimed:
+                log("Claim не сработал после покупки", window_id)
+                continue
+
+            log("Claim успешно сработал", window_id)
+            break
+        else:
+            log("Не удалось обработать ни одну монетку", window_id)
+            return []
+
+def skip_vitlity(windowInfo, mode: Literal["skip", "claim"] = "skip"):
+    vitalka = False
+
+    if mode == "skip":
+        tag = "cancel_button_vitality"
+    if mode == "claim":
+        tag = "cancel_button_vitality" #todo добавить серую кнопку
+
+    def wait_and_click(tag, timeout=5):
+        xy, rgb = parseCBT(tag)
+        if check_pixel(windowInfo, xy, rgb, timeout):
+            x, y = xy
+            click_mouse(windowInfo, x, y)
+            return True
+        return False
+    
+    def check_clr(tag):
+        xy, rgb = parseCBT(tag)
+        return check_pixel(windowInfo, xy, rgb, 2)
+
+    cancel_ex = check_clr(tag)
+    if cancel_ex:
+        vitalka = True
+        wait_and_click(tag, 5)
+    time.sleep(1)
+    return vitalka
 
 def claim_achiv(windowInfo):
     claimed = False
@@ -86,11 +263,11 @@ def claim_mail(windowInfo):
             time.sleep(1)
 
             red_dot_ex = check_clr("red_dot_mail")
-            cancel_ex = check_clr("cancel_button_mail")
+            cancel_ex = check_clr("cancel_button_vitality")
 
             if cancel_ex:
                 # это лимит опыта
-                wait_and_click("cancel_button_mail", 5)
+                wait_and_click("cancel_button_vitality", 5)
                 wait_and_click("npc_global_quit_button", 5)
                 claimed = False
                 break
@@ -192,15 +369,17 @@ def claim_battle_pass(windowInfo):
         if found_1:
             x, y = xy_sbor2
             click_mouse(windowInfo, x, y)
-            time.sleep(5)
+            time.sleep(2)
+            skip_vitlity(windowInfo)
         elif found_2:
             x, y = xy_sbor22
             click_mouse(windowInfo, x, y)
-            time.sleep(5)
+            time.sleep(2)
+            skip_vitlity(windowInfo)
         else:
             log("Собирать нечего, иду чекать некст вкладку если она есть", windowid)
 
-        log("Походу собрал фулл бп, ливаю?", windowid)
+        log("Шось собрал в баттл пассе", windowid)
 
     close = wait_and_click("npc_global_quit_button", 5)
     if tabs:
@@ -210,38 +389,77 @@ def claim_battle_pass(windowInfo):
 
 
 def claim_daily(windowInfo):
+
+    windowid = next(iter(windowInfo))
+
     def wait_and_click(tag, timeout=5):
+        log(f"Ждем и кликаем по тегу: {tag}", windowid)
         xy, rgb = parseCBT(tag)
         if check_pixel(windowInfo, xy, rgb, timeout):
             x, y = xy
             click_mouse(windowInfo, x, y)
+            log(f"Клик по координатам: {x}, {y} для тега: {tag}", windowid)
             return True
+        log(f"Не найден пиксель для тега: {tag}", windowid)
         return False
 
-    windowid = next(iter(windowInfo))
-
     if checkEnergoMode(windowInfo):
+        log("Включен, выключаем", windowid)
         before = True
         energo_mode(windowInfo, "off")
 
     if not wait_and_click("main_menu_gui", 5):
-        return False
+        log("Не удалось открыть главное меню", windowid)
 
     if not wait_and_click("red_dot_daily_rewards", 3):
-        log("Дейликов нет, собирать не будем", windowid)
-        close = wait_and_click("npc_global_quit_button", 5)
+        log("Не удалось нажать на точку красную в меню", windowid)
         return False
 
-    xy, rgb = parseCBT("red_dot_daily_2")
-    dot2 = check_pixel(windowInfo, xy, rgb, 5)
-    if not dot2:
-        close = wait_and_click("npc_global_quit_button", 5)
-        return False
+    time.sleep(1)
 
-    if wait_and_click("daily_rewards_claim", 3):
-        close = wait_and_click("npc_global_quit_button", 5)
-        return True
+    tabs = find_daily_tabs(windowInfo)
+    summary = 0
+    if tabs:
+        log(f"Найдено вкладок: {len(tabs)} — {tabs}", windowid)
+        for i, tab in enumerate(tabs, 1):
+            time.sleep(3)
+            log(f"Обработка вкладки {i}: {tab}", windowid)
 
+            if len(tab) >= 2:
+                x, y = map(int, tab[0].split(", "))
+                xy = (x, y)
+                log(f"Координаты вкладки: {xy}", windowid)
+
+                if tab[1] == "no":
+                    rgb = "no"
+                else:
+                    r, g, b = map(int, tab[1].split(", "))
+                    rgb = (r, g, b)
+                    log(f"Цвет пикселя: {rgb}", windowid)
+
+                click_mouse(windowInfo, x, y)
+                log(f"Клик по вкладке: {xy}", windowid)
+
+                result = find_daily(windowInfo)
+                if result:
+                    time.sleep(2)
+                    summary += 1
+                    log(f"результ: {result}", windowid)
+            else:
+                log(f"насрано: {tab}", windowid)
+
+        close = wait_and_click("npc_global_quit_button", 5)
+        if close:
+            log("Закрытие окна NPC", windowid)
+            if summary > 0:
+                log(f"Собрано ежедневных наград: {summary}", windowid)
+                return True
+        else:
+            log(f"{close}, {summary} | пиздец на выкупе дейлика", windowid)
+    else:
+        log("Вкладки с дейликом не найдены", windowid)
+
+    log("Выход из claim_daily с результатом False", windowid)
     return False
 
 def claim_clan(windowInfo):
@@ -307,9 +525,9 @@ def claim_donate_shop(windowInfo):
     cfg = load_config()
     vkladki = [int(x.strip()) for x in cfg.other.MAGAZ_PAGES.split(",")]
 
-    def wait_and_click(tag, timeout=5):
+    def wait_and_click(tag, timeout=5, thr=2, wsize="2x2"):
         xy, rgb = parseCBT(tag)
-        if check_pixel(windowInfo, xy, rgb, timeout):
+        if check_pixel(windowInfo, xy, rgb, timeout, thr, wsize):
             x, y = xy
             click_mouse(windowInfo, x, y)
             return True
@@ -330,7 +548,7 @@ def claim_donate_shop(windowInfo):
     if not wait_and_click("magaz_gui_open", 5):
         return False
 
-    if wait_and_click("magaz_reklama_trigger", 5):
+    if wait_and_click("magaz_reklama_trigger", 8, 1, "1x1"):
         if wait_and_click("magaz_reklama_close", 2):
             log("Вылезла реклама, закрыл гадость", windowid)
 
@@ -663,7 +881,7 @@ def navigateToNPC(windowInfo, NPC):
             log(f"{current_npc} находится в {NPC_CHECK_BUTTONS}, жду появления гуи", windowid)
             xy, rgb = parseCBT(NPC_CHECK_BUTTONS[current_npc])
             attempts = 0
-            while not check_pixel(windowInfo, xy, rgb, 1):
+            while not check_pixel(windowInfo, xy, rgb, 1, 7):
                 log(f"Все еще бегу к {current_npc}", windowid)
                 time.sleep(0.005)
                 attempts += 1

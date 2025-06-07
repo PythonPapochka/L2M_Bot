@@ -1,7 +1,7 @@
 from interception import inputs
 import time
 import pygetwindow as gw
-from constans import CBT_JP, BATTLE_PASS
+from constans import CBT_JP, BATTLE_PASS, DAILY
 import win32gui
 import win32process
 import win32api
@@ -50,6 +50,62 @@ def parseCBT(trigger_name):
 
             return xy, rgb
     return None, None
+
+def find_daily_tabs(window_info, t=16, step=1, distance=12):
+    window_id, window = next(iter(window_info.items()))
+    left, top = window["Position"]
+    width = window["Width"]
+    height = window["Height"]
+
+    log(f"начал чекать вкладки", window_id)
+    log(f"окно: left={left}, top={top}, width={width}, height={height}", window_id)
+
+    x_search = DAILY["y_vkladki"]
+    red_rgb = tuple(map(int, DAILY["red_dot_clr"][0].split(', ')))
+
+    log(f"x_search={x_search}, red_rgb={red_rgb}, t={t}, step={step}, distance={distance}", window_id)
+
+    hits = []
+
+    with mss.mss() as sct:
+        monitor = {
+            "left": left + x_search,
+            "top": top,
+            "width": 1,
+            "height": height
+        }
+        log(f"Захватил: {monitor}", window_id)
+        screenshot = np.array(sct.grab(monitor))
+
+        for y in range(0, height, step):
+            pixel_bgr = screenshot[y, 0][:3]
+            pixel_rgb = pixel_bgr[::-1]
+
+            if all(abs(int(pixel_rgb[i]) - red_rgb[i]) <= t for i in range(3)):
+                hits.append(y)
+
+    log(f"Найдено совпадений: {len(hits)} — {hits}", window_id)
+
+    buttons = []
+    if hits:
+        group = [hits[0]]
+        for y in hits[1:]:
+            if y - group[-1] <= distance:
+                group.append(y)
+            else:
+                avg = int(sum(group) / len(group))
+                buttons.append(avg)
+                log(f"Завершил хиты, добавил y={avg}", window_id)
+                group = [y]
+        avg = int(sum(group) / len(group))
+        buttons.append(avg)
+        log(f"Добавил y={avg}", window_id)
+
+    x_s = x_search - 14
+    result = [[f"{x_s}, {y}", "no"] for y in buttons]
+    log(f"Результат поиска вкладок: {result}", window_id)
+
+    return result
 
 def find_BP_1(window_info, t=5, step=5, distance=30):
     window_id, window = next(iter(window_info.items()))

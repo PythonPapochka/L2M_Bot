@@ -552,6 +552,11 @@ def claim_donate_shop(windowInfo):
         if wait_and_click("magaz_reklama_close", 2):
             log("Вылезла реклама, закрыл гадость", windowid)
 
+    x1y, r1gb = parseCBT("magaz_google_trigger")
+    if check_pixel(windowInfo, x1y, r1gb, 4, 2, "2x2"):
+        if wait_and_click("magaz_google_close", 2):
+            log("Вылезла вторая реклама, закрыл гадость", windowid)
+
     if not wait_and_click("red_dot_magaz", 4):
         wait_and_click("npc_global_quit_button", 5)
         return False
@@ -1000,7 +1005,7 @@ def getNPCposition(windowInfo):
     npc_mapping = {}
     windowid = next(iter(windowInfo))
     log(f"Пробую получить позиции нпс", windowid)
-    for j in [2, 3, 5, 6]:
+    for j in [2, 3, 4]:
         xy, rgb = parseCBT(f"npc_list_{j}")
         log(f"Пробую чекнуть npc_list_{j}", windowid)
         result = check_pixel(windowInfo, xy, rgb, 1, 1, "1x1")
@@ -1019,17 +1024,11 @@ def getNPCposition(windowInfo):
                     "shop": "npc_list_1",
                     "buyer": "npc_list_5"
                 }
-            if j == 5:
+            if j == 4:
                 npc_mapping = {
                     "stash": f"npc_list_{j}",
-                    "shop": "npc_list_3",
-                    "buyer": "no_data"
-                }
-            if j == 6:
-                npc_mapping = {
-                    "stash": f"npc_list_{j}",
-                    "shop": "npc_list_4",
-                    "buyer": "no_data"
+                    "shop": "npc_list_2",
+                    "buyer": "npc_list_6"
                 }
             break
         else:

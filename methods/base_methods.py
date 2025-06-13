@@ -51,6 +51,15 @@ def parseCBT(trigger_name):
             return xy, rgb
     return None, None
 
+
+def check_res(window_info, base="400x225"):
+    base_width, base_height = map(int, base.split("x"))
+    window_id, window = next(iter(window_info.items()))
+    width = int(window["Width"])
+    height = int(window["Height"])
+
+    return width == base_width and height == base_height
+
 def find_daily_tabs(window_info, t=16, step=1, distance=12):
     window_id, window = next(iter(window_info.items()))
     left, top = window["Position"]

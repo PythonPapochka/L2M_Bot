@@ -6,7 +6,7 @@ import os
 from datetime import datetime, timedelta
 from clogger import log
 
-from methods.base_methods import SettingsManager, parseCBT, check_pixel, click_mouse, load_config
+from methods.base_methods import SettingsManager, parseCBT, check_pixel, click_mouse, load_config, check_res
 
 from manager import PvpManager, BackToSpotManager, DeathManager, HpBankManager, PerevesManager, \
     FarmManager, MailClaimerManager, RewardsManager, ShopStashSellManager
@@ -523,5 +523,16 @@ class Scenary:
             self.process_zakup_po_time()
 
 def main():
+    all_windows = settingsm.loadSettings()
+    bads = []
+
+    for name, window in all_windows.items():
+        if not check_res({name: window}):
+            bads.append(name)
+
+    if bads:
+        log(f"Поставь разрешение 400x225 у: {', '.join(map(str, bads))}")
+        return
+
     scenary = Scenary()
     scenary.run()

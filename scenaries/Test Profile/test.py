@@ -5,7 +5,7 @@ from clogger import log
 from methods.base_methods import SettingsManager
 
 from methods.game_utils import energo_mode, checkEnergoMode, \
-    claim_battle_pass, teleportToTown, teleportToRandomSpot, navigateToNPC, getNPCposition, claim_daily, find_daily
+    claim_battle_pass, teleportToTown, teleportToRandomSpot, navigateToNPC, getNPCposition, claim_daily, find_daily, claim_donate_shop
 
 from tgbot.tg import TgBotus
 
@@ -25,9 +25,9 @@ class Scenary:
             windowInfo = {nickname: data}
             windowdata = data["State"] #todo допилить чтоб не собирало бп у... у кого?
             if windowdata not in ["death", "stashing", "shopping", "claiming"]:
-                zakup1 = find_daily({nickname: data})
+                zakup1 = claim_donate_shop({nickname: data})
                 if zakup1:
-                    log(f"{kolvo} | yes | {zakup1}", nickname)
+                    log(f"yes | {zakup1}", nickname)
 
                 time.sleep(0.1)
         return
